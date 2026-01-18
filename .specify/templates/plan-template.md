@@ -31,7 +31,27 @@
 
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
-[Gates determined based on constitution file]
+**Code Quality Excellence** (Principle I):
+- [ ] Feature follows idiomatic patterns for chosen language/framework
+- [ ] Error handling strategy documented with explicit failure modes
+- [ ] Public API documentation requirements identified
+- [ ] Code review criteria specific to this feature defined
+
+**User Experience Consistency** (Principle II):
+- [ ] UI patterns align with existing application conventions (if applicable)
+- [ ] Accessibility requirements (WCAG 2.1 AA) documented for user-facing features
+- [ ] Responsive design requirements specified for multi-device support
+- [ ] User feedback mechanisms (loading states, errors, success) defined
+- [ ] Error message strategy ensures human-readable, actionable content
+
+**Performance by Design** (Principle III):
+- [ ] Response time targets specified (API: <500ms p95, UI: <200ms p95)
+- [ ] Database query patterns reviewed for N+1 issues and indexing strategy
+- [ ] Memory and resource budgets defined
+- [ ] Performance monitoring instrumentation planned for critical paths
+- [ ] Scalability to 10x load considered in design
+
+**Violations**: [Document any principle violations here with justification, or state "None"]
 
 ## Project Structure
 

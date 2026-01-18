@@ -92,10 +92,30 @@ Examples of foundational tasks (adjust based on your project):
 - [ ] T013 [P] [US1] Create [Entity2] model in src/models/[entity2].py
 - [ ] T014 [US1] Implement [Service] in src/services/[service].py (depends on T012, T013)
 - [ ] T015 [US1] Implement [endpoint/feature] in src/[location]/[file].py
-- [ ] T016 [US1] Add validation and error handling
+- [ ] T016 [US1] Add validation and error handling with actionable error messages
 - [ ] T017 [US1] Add logging for user story 1 operations
 
-**Checkpoint**: At this point, User Story 1 should be fully functional and testable independently
+### Code Quality Gates for User Story 1 (Constitution Principle I)
+
+- [ ] T018 [US1] Add public API documentation for exposed interfaces
+- [ ] T019 [US1] Review code for idiomatic patterns and readability
+- [ ] T020 [US1] Ensure error handling provides actionable context
+
+### UX Quality Gates for User Story 1 (Constitution Principle II - if applicable)
+
+- [ ] T021 [US1] Verify UI consistency with existing patterns
+- [ ] T022 [US1] Validate WCAG 2.1 AA accessibility compliance
+- [ ] T023 [US1] Test responsive behavior across device sizes
+- [ ] T024 [US1] Implement loading states and user feedback mechanisms
+
+### Performance Validation for User Story 1 (Constitution Principle III)
+
+- [ ] T025 [US1] Add performance instrumentation for critical paths
+- [ ] T026 [US1] Verify response times meet targets (<500ms API, <200ms UI at p95)
+- [ ] T027 [US1] Review database queries for N+1 issues and indexing
+- [ ] T028 [US1] Validate memory usage within defined budgets
+
+**Checkpoint**: At this point, User Story 1 should be fully functional, quality-gated, and testable independently
 
 ---
 
