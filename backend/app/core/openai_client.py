@@ -1,0 +1,71 @@
+"""
+OpenAI client singleton for GPT-5-Nano API calls
+"""
+from openai import AsyncOpenAI
+from app.config import settings
+
+
+class OpenAIClient:
+    """Singleton wrapper for OpenAI async client"""
+    
+    _instance: AsyncOpenAI | None = None
+    
+    @classmethod
+    def get_client(cls) -> AsyncOpenAI:
+        """Get or create OpenAI client instance"""
+        if cls._instance is None:
+            cls._instance = AsyncOpenAI(
+                api_key=settings.OPENAI_API_KEY,
+            )
+        return cls._instance
+    
+    @classmethod
+    async def chat_completion(
+        cls,
+        messages: list[dict[str, str]],
+        model: str | None = None,
+        temperature: float = 0.7,
+        max_tokens: int | None = None,
+    ) -> str:
+        """Execute a chat completion and return response text"""
+        client = cls.get_client()
+        
+        response = await client.chat.completions.create(
+            model=model or settings.OPENAI_MODEL,
+            messages=messages,
+            temperature=temperature,
+            max_tokens=max_tokens,
+        )
+        
+        return response.choices[0].message.content or ""
+    
+    @classmethod
+    async def vision_completion(
+        cls,
+        image_url: str,
+        prompt: str,
+        model: str | None = None,
+    ) -> str:
+        """Execute vision API call for OCR"""
+        client = cls.get_client()
+        
+        response = await client.chat.completions.create(
+            model=model or settings.OPENAI_MODEL,
+            messages=[
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "text", "text": prompt},
+                        {"type": "image_url", "image_url": {"url": image_url}},
+                    ],
+                }
+            ],
+        )
+        
+        return response.choices[0].message.content or ""
+
+
+# Convenience function
+async def get_openai_client() -> AsyncOpenAI:
+    """Get OpenAI client instance"""
+    return OpenAIClient.get_client()

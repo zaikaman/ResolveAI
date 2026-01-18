@@ -19,29 +19,29 @@
 
 **Purpose**: Project initialization, configuration, and shared infrastructure
 
-- [ ] T001 Create frontend project structure with Vite+React+TypeScript at frontend/
-- [ ] T002 Create backend project structure with FastAPI+Python at backend/
-- [ ] T003 Configure frontend dependencies in frontend/package.json (React 18.3+, Vite 5.0+, TypeScript 5.3+, TailwindCSS, Recharts, Zustand, @supabase/supabase-js, react-dropzone, crypto-js, zod, axios)
-- [ ] T004 Configure backend dependencies in backend/requirements.txt (fastapi, uvicorn, pydantic, supabase, openai, opik-python, vapi-python, pulp, cryptography, passlib, python-jose, pytest)
-- [ ] T005 [P] Configure TypeScript strict mode in frontend/tsconfig.json
-- [ ] T006 [P] Configure TailwindCSS with design system in frontend/tailwind.config.js (8px grid, color palette: green/progress, warm/encouragement)
-- [ ] T007 [P] Configure Python code quality tools in backend/pyproject.toml (black, ruff, mypy)
-- [ ] T008 [P] Create environment variable templates frontend/.env.example and backend/.env.example
+- [X] T001 Create frontend project structure with Vite+React+TypeScript at frontend/
+- [X] T002 Create backend project structure with FastAPI+Python at backend/
+- [X] T003 Configure frontend dependencies in frontend/package.json (React 18.3+, Vite 5.0+, TypeScript 5.3+, TailwindCSS, Recharts, Zustand, @supabase/supabase-js, @vapi-ai/web, react-dropzone, crypto-js, zod, axios)
+- [X] T004 Configure backend dependencies in backend/requirements.txt (fastapi, uvicorn, pydantic, supabase, openai, opik, pulp, cryptography, passlib, python-jose, pytest)
+- [X] T005 [P] Configure TypeScript strict mode in frontend/tsconfig.json
+- [X] T006 [P] Configure TailwindCSS with design system in frontend/tailwind.config.js (8px grid, color palette: green/progress, warm/encouragement)
+- [X] T007 [P] Configure Python code quality tools in backend/pyproject.toml (black, ruff, mypy)
+- [X] T008 [P] Create environment variable templates frontend/.env.example and backend/.env.example
 - [ ] T009 Setup Supabase project and copy connection details to .env files
 - [ ] T010 Initialize Opik project in Comet workspace and configure API keys
-- [ ] T011 Create Supabase database schema migrations in backend/app/db/migrations/001_init.sql (users, debts, repayment_plans, payments, actions, transactions, insights, milestones, reminders, negotiation_scripts tables)
-- [ ] T012 Create database indexes migration in backend/app/db/migrations/002_indexes.sql (20+ indexes per data-model.md for <200ms query performance)
-- [ ] T013 Create row-level security policies migration in backend/app/db/migrations/003_rls.sql (user data isolation)
+- [X] T011 Create Supabase database schema migrations in backend/app/db/migrations/001_init.sql (users, debts, repayment_plans, payments, actions, transactions, insights, milestones, reminders, negotiation_scripts tables)
+- [X] T012 Create database indexes migration in backend/app/db/migrations/002_indexes.sql (20+ indexes per data-model.md for <200ms query performance)
+- [X] T013 Create row-level security policies migration in backend/app/db/migrations/003_rls.sql (user data isolation)
 - [ ] T014 Run database migrations against Supabase project using python scripts/run_migrations.py
-- [ ] T015 [P] Configure CORS settings in backend/app/main.py for frontend origin
-- [ ] T016 [P] Create FastAPI app entry point with middleware in backend/app/main.py
-- [ ] T017 [P] Create Pydantic settings configuration in backend/app/config.py for environment variables
-- [ ] T018 [P] Setup Opik tracing initialization in backend/app/core/opik_tracing.py with LLM-as-judge configuration
-- [ ] T019 [P] Create OpenAI client singleton in backend/app/core/openai_client.py (GPT-5-Nano configuration)
-- [ ] T020 [P] Create Vapi client singleton in backend/app/core/vapi_client.py
-- [ ] T021 [P] Setup Supabase client in frontend/src/services/supabaseClient.ts
-- [ ] T022 [P] Create encryption utility in frontend/src/utils/encryption.ts (client-side AES-256-GCM)
-- [ ] T023 [P] Create encryption service in backend/app/services/encryption_service.py (server-side AES-256)
+- [X] T015 [P] Configure CORS settings in backend/app/main.py for frontend origin
+- [X] T016 [P] Create FastAPI app entry point with middleware in backend/app/main.py
+- [X] T017 [P] Create Pydantic settings configuration in backend/app/config.py for environment variables
+- [X] T018 [P] Setup Opik tracing initialization in backend/app/core/opik_tracing.py with LLM-as-judge configuration
+- [X] T019 [P] Create OpenAI client singleton in backend/app/core/openai_client.py (GPT-4o-mini configuration)
+- [X] T020 [P] Create Vapi service in frontend/src/services/vapiService.ts (frontend voice AI integration)
+- [X] T021 [P] Setup Supabase client in frontend/src/services/supabaseClient.ts
+- [X] T022 [P] Create encryption utility in frontend/src/utils/encryption.ts (client-side AES-256-GCM)
+- [X] T023 [P] Create encryption service in backend/app/services/encryption_service.py (server-side AES-256)
 
 ---
 
