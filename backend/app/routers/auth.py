@@ -66,7 +66,7 @@ async def complete_onboarding(
     Complete user onboarding with initial financial data.
     
     Args:
-        onboarding_data: Encrypted financial data and terms acceptance
+        onboarding_data: Financial data (plaintext) and terms acceptance
     
     Returns:
         Updated user profile with onboarding_completed = true
@@ -74,9 +74,9 @@ async def complete_onboarding(
     try:
         updated_user = await UserRepository.complete_onboarding(
             user_id=current_user.id,
-            monthly_income_encrypted=onboarding_data.monthly_income_encrypted,
-            monthly_expenses_encrypted=onboarding_data.monthly_expenses_encrypted,
-            available_for_debt_encrypted=onboarding_data.available_for_debt_encrypted
+            monthly_income=onboarding_data.monthly_income,
+            monthly_expenses=onboarding_data.monthly_expenses,
+            available_for_debt=onboarding_data.available_for_debt
         )
         
         return UserResponse(**updated_user.model_dump())

@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
 import { Input } from '../components/common/Input';
 import { Button } from '../components/common/Button';
-import { encryptValue, deriveKey } from '../utils/encryption';
 import api from '../services/api';
 
 export default function Onboarding() {
@@ -39,14 +38,11 @@ export default function Onboarding() {
         setError(null);
 
         try {
-            // Temporary: Derive key from user ID for MVP
-            // TODO: Implement proper key management (e.g. user password/PIN)
-            const encryptionKey = deriveKey(user.id, 'resolve-ai-salt');
-
+            // Server-only encryption: send plaintext, server encrypts before storage
             const payload = {
-                monthly_income_encrypted: encryptValue(formData.income, encryptionKey),
-                monthly_expenses_encrypted: encryptValue(formData.expenses, encryptionKey),
-                available_for_debt_encrypted: encryptValue(formData.debtAllowance, encryptionKey),
+                monthly_income: formData.income,
+                monthly_expenses: formData.expenses,
+                available_for_debt: formData.debtAllowance,
                 terms_accepted: true
             };
 

@@ -7,13 +7,11 @@ import { CreditCard, TrendingDown, Calendar, Trash2, Edit2, CheckCircle } from '
 import { Card, CardContent } from '../common/Card';
 import { Button } from '../common/Button';
 import { cn } from '../../utils/cn';
-import { decryptValue } from '../../utils/encryption';
 import { formatCurrency } from '../../utils/formatting';
 import type { Debt } from '../../stores/debtStore';
 
 interface DebtCardProps {
     debt: Debt;
-    encryptionKey: string;
     onEdit?: (debt: Debt) => void;
     onDelete?: (debt: Debt) => void;
     onMarkPaidOff?: (debt: Debt) => void;
@@ -42,24 +40,15 @@ const debtTypeColors: Record<string, string> = {
 
 export function DebtCard({
     debt,
-    encryptionKey,
     onEdit,
     onDelete,
     onMarkPaidOff,
     className,
 }: DebtCardProps) {
-    // Decrypt sensitive fields
-    let balance = 0;
-    let apr = 0;
-    let minimumPayment = 0;
-
-    try {
-        balance = parseFloat(decryptValue(debt.balance_encrypted, encryptionKey));
-        apr = parseFloat(decryptValue(debt.apr_encrypted, encryptionKey));
-        minimumPayment = parseFloat(decryptValue(debt.minimum_payment_encrypted, encryptionKey));
-    } catch (e) {
-        console.error('Failed to decrypt debt data:', e);
-    }
+    // Use plaintext fields directly
+    const balance = debt.balance;
+    const apr = debt.apr;
+    const minimumPayment = debt.minimum_payment;
 
     return (
         <Card

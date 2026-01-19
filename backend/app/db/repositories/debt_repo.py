@@ -1,10 +1,11 @@
 """
-Debt repository for CRUD operations with encryption support.
+Debt repository for CRUD operations with server-side encryption.
 """
 
 from datetime import datetime
 from typing import Optional, List
 from app.services.supabase_service import SupabaseService
+from app.services.encryption_service import encryption_service
 from app.models.debt import DebtCreate, DebtUpdate, DebtResponse, DebtListResponse, DebtSummary
 from app.core.errors import NotFoundError, DatabaseError
 
@@ -15,27 +16,59 @@ class DebtRepository:
     TABLE = "debts"
     
     @staticmethod
+    def _decrypt_debt(db_debt: dict) -> DebtResponse:
+        """
+        Decrypt encrypted fields from database record.
+        
+        Args:
+            db_debt: Raw debt record from database
+        
+        Returns:
+            DebtResponse with decrypted financial fields
+        """
+        return DebtResponse(
+            id=db_debt["id"],
+            user_id=db_debt["user_id"],
+            creditor_name=db_debt["creditor_name"],
+            debt_type=db_debt["debt_type"],
+            balance=float(encryption_service.decrypt_server_only(db_debt["current_balance_encrypted"])),
+            apr=float(encryption_service.decrypt_server_only(db_debt["interest_rate_encrypted"])),
+            minimum_payment=float(encryption_service.decrypt_server_only(db_debt["minimum_payment_encrypted"])),
+            account_number_last4=db_debt.get("account_number_last4"),
+            due_date=db_debt.get("due_date_day"),
+            notes=db_debt.get("notes"),
+            is_active=db_debt["is_active"],
+            is_paid_off=db_debt["is_paid_off"],
+            paid_off_at=db_debt.get("paid_off_at"),
+            created_at=db_debt["created_at"],
+            updated_at=db_debt["updated_at"]
+        )
+    
+    @staticmethod
     async def create(user_id: str, debt_data: DebtCreate, token: Optional[str] = None) -> DebtResponse:
         """
         Create a new debt for a user.
+        Encrypts plaintext financial data with server key before storage.
         
         Args:
             user_id: User UUID
-            debt_data: Debt creation data (with encrypted fields)
+            debt_data: Debt creation data (plaintext)
+            token: Optional JWT token
         
         Returns:
-            Created debt
+            Created debt (with decrypted values)
         
         Raises:
             DatabaseError: If creation fails
         """
+        # Encrypt plaintext values before storage
         db_data = {
             "user_id": user_id,
             "creditor_name": debt_data.creditor_name,
             "debt_type": debt_data.debt_type.value,
-            "current_balance_encrypted": debt_data.balance_encrypted,
-            "interest_rate_encrypted": debt_data.apr_encrypted,
-            "minimum_payment_encrypted": debt_data.minimum_payment_encrypted,
+            "current_balance_encrypted": encryption_service.encrypt_server_only(str(debt_data.balance)),
+            "interest_rate_encrypted": encryption_service.encrypt_server_only(str(debt_data.apr)),
+            "minimum_payment_encrypted": encryption_service.encrypt_server_only(str(debt_data.minimum_payment)),
             "due_date_day": debt_data.due_date,
             "notes": debt_data.notes,
             "is_active": True,
@@ -45,7 +78,8 @@ class DebtRepository:
         }
         
         result = await SupabaseService.insert(DebtRepository.TABLE, db_data, token=token)
-        return DebtResponse(**result)
+        # Decrypt before returning
+        return DebtRepository._decrypt_debt(result)
     
     @staticmethod
     async def get_by_id(debt_id: str, user_id: str, token: Optional[str] = None) -> Optional[DebtResponse]:
@@ -63,7 +97,7 @@ class DebtRepository:
             DebtRepository.TABLE,
             filters={"id": debt_id, "user_id": user_id}
         )
-        return DebtResponse(**results[0]) if results else None
+        return DebtRepository._decrypt_debt(results[0]) if results else None
     
     @staticmethod
     async def get_all_by_user(
@@ -90,7 +124,7 @@ class DebtRepository:
             order_by="created_at"
         )
         
-        debts = [DebtResponse(**row) for row in results]
+        debts = [DebtRepository._decrypt_debt(row) for row in results]
         
         # Calculate summary
         total_debts = len(debts)
@@ -106,12 +140,13 @@ class DebtRepository:
         return DebtListResponse(debts=debts, summary=summary)
     
     @staticmethod
-    async def get_active_debts(user_id: str) -> List[DebtResponse]:
+    async def get_active_debts(user_id: str, token: Optional[str] = None) -> List[DebtResponse]:
         """
         Get only active (non-paid-off) debts for a user.
         
         Args:
             user_id: User UUID
+            token: Optional JWT token for authenticated request
         
         Returns:
             List of active debts
@@ -123,10 +158,11 @@ class DebtRepository:
                 "is_active": True,
                 "is_paid_off": False
             },
-            order_by="created_at"
+            order_by="created_at",
+            token=token
         )
         
-        return [DebtResponse(**row) for row in results]
+        return [DebtRepository._decrypt_debt(row) for row in results]
     
     @staticmethod
     async def update(
@@ -154,17 +190,19 @@ class DebtRepository:
         if not existing:
             raise NotFoundError("Debt", debt_id)
         
-        # Prepare update data (exclude None values)
+        # Prepare update data (exclude None values and encrypt financial fields)
         db_data = {}
         update_dict = update_data.model_dump(exclude_none=True)
         
         for key, value in update_dict.items():
             if key == "debt_type" and value is not None:
                 db_data[key] = value.value
-            elif key == "balance_encrypted":
-                db_data["current_balance_encrypted"] = value
-            elif key == "apr_encrypted":
-                db_data["interest_rate_encrypted"] = value
+            elif key == "balance":
+                db_data["current_balance_encrypted"] = encryption_service.encrypt_server_only(str(value))
+            elif key == "apr":
+                db_data["interest_rate_encrypted"] = encryption_service.encrypt_server_only(str(value))
+            elif key == "minimum_payment":
+                db_data["minimum_payment_encrypted"] = encryption_service.encrypt_server_only(str(value))
             elif key == "due_date":
                 db_data["due_date_day"] = value
             else:
@@ -185,7 +223,7 @@ class DebtRepository:
                 operation="update"
             )
         
-        return DebtResponse(**results[0])
+        return DebtRepository._decrypt_debt(results[0])
     
     @staticmethod
     async def mark_paid_off(debt_id: str, user_id: str, token: Optional[str] = None) -> DebtResponse:
@@ -218,7 +256,7 @@ class DebtRepository:
         if not results:
             raise NotFoundError("Debt", debt_id)
         
-        return DebtResponse(**results[0])
+        return DebtRepository._decrypt_debt(results[0])
     
     @staticmethod
     async def delete(debt_id: str, user_id: str, token: Optional[str] = None) -> None:

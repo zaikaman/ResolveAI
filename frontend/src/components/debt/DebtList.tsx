@@ -12,7 +12,6 @@ import type { Debt, DebtSummary } from '../../stores/debtStore';
 interface DebtListProps {
     debts: Debt[];
     summary: DebtSummary | null;
-    encryptionKey: string;
     onAddDebt: () => void;
     onEditDebt: (debt: Debt) => void;
     onDeleteDebt: (debt: Debt) => void;
@@ -23,7 +22,6 @@ interface DebtListProps {
 export function DebtList({
     debts,
     summary,
-    encryptionKey,
     onAddDebt,
     onEditDebt,
     onDeleteDebt,
@@ -152,7 +150,6 @@ export function DebtList({
                     <DebtCard
                         key={debt.id}
                         debt={debt}
-                        encryptionKey={encryptionKey}
                         onEdit={onEditDebt}
                         onDelete={onDeleteDebt}
                         onMarkPaidOff={onMarkPaidOff}

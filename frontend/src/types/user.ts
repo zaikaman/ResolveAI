@@ -33,8 +33,8 @@ export interface UserUpdate {
 }
 
 export interface OnboardingData {
-  monthly_income_encrypted: string;
-  monthly_expenses_encrypted: string;
-  available_for_debt_encrypted: string;
+  monthly_income: number;
+  monthly_expenses: number;
+  available_for_debt: number;
   terms_accepted: boolean;
 }

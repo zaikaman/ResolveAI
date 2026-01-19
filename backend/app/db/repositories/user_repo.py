@@ -7,6 +7,7 @@ from typing import Optional
 from app.services.supabase_service import SupabaseService
 from app.models.user import UserCreate, UserProfile, UserUpdate
 from app.core.errors import NotFoundError, ConflictError, DatabaseError
+from app.services.encryption_service import encryption_service
 
 
 class UserRepository:
@@ -30,24 +31,28 @@ class UserRepository:
             ConflictError: If email already exists
             DatabaseError: If creation fails
         """
-        # Check if user already exists
-        existing = await UserRepository.get_by_email(user_data.email)
+        # Check if user already exists by email (with token for RLS)
+        existing = await UserRepository.get_by_email(user_data.email, token=token)
         if existing:
-            raise ConflictError(
-                message=f"User with email {user_data.email} already exists",
-                details={"email": user_data.email}
-            )
+            print(f"[USER_REPO] User already exists with email {user_data.email}, returning existing user")
+            return existing
+        
+        # If user_data has an ID, also check by ID (with token for RLS)
+        if user_data.id:
+            existing_by_id = await UserRepository.get_by_id(user_data.id, token=token)
+            if existing_by_id:
+                print(f"[USER_REPO] User already exists with ID {user_data.id}, returning existing user")
+                return existing_by_id
         
         # Prepare user data
         db_data = {
             "email": user_data.email,
             "full_name": user_data.full_name,
+            "timezone": "UTC",  # Use shorter default to avoid varchar(10) constraint
+            "language": "en",
             "created_at": datetime.utcnow().isoformat(),
             "updated_at": datetime.utcnow().isoformat()
         }
-        
-        # Note: avatar_url is not in the users table schema, so we skip it
-        # If needed in the future, add it to the migration first
         
         if user_data.id:
             db_data["id"] = user_data.id
@@ -60,36 +65,52 @@ class UserRepository:
             return UserProfile(**result)
         except Exception as e:
             print(f"[USER_REPO] Error creating user: {e}")
-            raise e
+            # If insert fails due to duplicate, try to fetch the user one more time
+            if "duplicate" in str(e).lower() or "already exists" in str(e).lower():
+                print(f"[USER_REPO] Duplicate detected, fetching existing user")
+                existing = await UserRepository.get_by_email(user_data.email, token=token)
+                if existing:
+                    return existing
+                if user_data.id:
+                    existing_by_id = await UserRepository.get_by_id(user_data.id, token=token)
+                    if existing_by_id:
+                        return existing_by_id
+            raise DatabaseError(
+                message=f"Failed to create user: {str(e)}",
+                operation="insert"
+            )
     
     @staticmethod
-    async def get_by_id(user_id: str) -> Optional[UserProfile]:
+    async def get_by_id(user_id: str, token: Optional[str] = None) -> Optional[UserProfile]:
         """
         Get user by ID.
         
         Args:
             user_id: User UUID
+            token: Optional JWT token for RLS
         
         Returns:
             User profile or None if not found
         """
-        result = await SupabaseService.get_by_id(UserRepository.TABLE, user_id)
+        result = await SupabaseService.get_by_id(UserRepository.TABLE, user_id, token=token)
         return UserProfile(**result) if result else None
     
     @staticmethod
-    async def get_by_email(email: str) -> Optional[UserProfile]:
+    async def get_by_email(email: str, token: Optional[str] = None) -> Optional[UserProfile]:
         """
         Get user by email.
         
         Args:
             email: User email address
+            token: Optional JWT token for RLS
         
         Returns:
             User profile or None if not found
         """
         results = await SupabaseService.select(
             UserRepository.TABLE,
-            filters={"email": email}
+            filters={"email": email},
+            token=token
         )
         return UserProfile(**results[0]) if results else None
     
@@ -149,18 +170,19 @@ class UserRepository:
     @staticmethod
     async def complete_onboarding(
         user_id: str,
-        monthly_income_encrypted: str,
-        monthly_expenses_encrypted: str,
-        available_for_debt_encrypted: str
+        monthly_income: float,
+        monthly_expenses: float,
+        available_for_debt: float
     ) -> UserProfile:
         """
         Mark onboarding as complete with initial financial data.
+        Encrypts plaintext values with server key before storage.
         
         Args:
             user_id: User UUID
-            monthly_income_encrypted: Encrypted monthly income
-            monthly_expenses_encrypted: Encrypted monthly expenses
-            available_for_debt_encrypted: Encrypted available for debt
+            monthly_income: Monthly income (plaintext)
+            monthly_expenses: Monthly expenses (plaintext)
+            available_for_debt: Available for debt (plaintext)
         
         Returns:
             Updated user profile
@@ -168,10 +190,11 @@ class UserRepository:
         Raises:
             NotFoundError: If user doesn't exist
         """
+        # Encrypt plaintext values with server key before storage
         db_data = {
-            "monthly_income_encrypted": monthly_income_encrypted,
-            "monthly_expenses_encrypted": monthly_expenses_encrypted,
-            "available_for_debt_encrypted": available_for_debt_encrypted,
+            "monthly_income_encrypted": encryption_service.encrypt_server_only(str(monthly_income)),
+            "monthly_expenses_encrypted": encryption_service.encrypt_server_only(str(monthly_expenses)),
+            "available_for_debt_encrypted": encryption_service.encrypt_server_only(str(available_for_debt)),
             "onboarding_completed": True,
             "terms_accepted_at": datetime.utcnow().isoformat(),
             "updated_at": datetime.utcnow().isoformat()

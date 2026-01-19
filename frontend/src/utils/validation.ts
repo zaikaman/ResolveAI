@@ -16,11 +16,11 @@ export const userUpdateSchema = z.object({
   notification_frequency: z.enum(['daily', 'weekly', 'custom']).optional(),
 });
 
-// Onboarding validation
+// Onboarding validation (plaintext, server encrypts)
 export const onboardingSchema = z.object({
-  monthly_income_encrypted: z.string().min(1, 'Monthly income is required'),
-  monthly_expenses_encrypted: z.string().min(1, 'Monthly expenses are required'),
-  available_for_debt_encrypted: z.string().min(1, 'Available amount is required'),
+  monthly_income: z.number().min(0.01, 'Monthly income is required'),
+  monthly_expenses: z.number().min(0, 'Monthly expenses are required'),
+  available_for_debt: z.number().min(0.01, 'Available amount is required'),
   terms_accepted: z.literal(true, {
     errorMap: () => ({ message: 'You must accept the terms and conditions' }),
   }),

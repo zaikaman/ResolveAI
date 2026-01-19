@@ -102,10 +102,10 @@ class UserResponse(BaseModel):
 
 
 class OnboardingComplete(BaseModel):
-    """Mark onboarding as complete with initial financial data."""
-    monthly_income_encrypted: str = Field(..., min_length=1)
-    monthly_expenses_encrypted: str = Field(..., min_length=1)
-    available_for_debt_encrypted: str = Field(..., min_length=1)
+    """Mark onboarding as complete with initial financial data (plaintext, server will encrypt)."""
+    monthly_income: float = Field(..., gt=0, description="Monthly income in plaintext")
+    monthly_expenses: float = Field(..., ge=0, description="Monthly expenses in plaintext")
+    available_for_debt: float = Field(..., gt=0, description="Available for debt in plaintext")
     terms_accepted: bool = True
     
     @field_validator("terms_accepted")

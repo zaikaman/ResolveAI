@@ -23,14 +23,14 @@ class DebtType(str, Enum):
 
 
 class DebtCreate(BaseModel):
-    """Payload for creating a new debt."""
+    """Payload for creating a new debt (plaintext, server will encrypt)."""
     creditor_name: str = Field(..., min_length=1, max_length=100)
     debt_type: DebtType = DebtType.OTHER
     
-    # Encrypted financial fields (encrypted by client before sending)
-    balance_encrypted: str = Field(..., min_length=1, description="AES-256-GCM encrypted balance")
-    apr_encrypted: str = Field(..., min_length=1, description="AES-256-GCM encrypted APR")
-    minimum_payment_encrypted: str = Field(..., min_length=1, description="AES-256-GCM encrypted minimum payment")
+    # Financial fields (plaintext, server encrypts before storage)
+    balance: float = Field(..., gt=0, description="Current balance")
+    apr: float = Field(..., ge=0, le=100, description="Annual percentage rate")
+    minimum_payment: float = Field(..., gt=0, description="Minimum monthly payment")
     
     # Optional metadata
     account_number_last4: Optional[str] = Field(None, pattern=r"^\d{4}$")
@@ -39,14 +39,14 @@ class DebtCreate(BaseModel):
 
 
 class DebtUpdate(BaseModel):
-    """Payload for updating an existing debt."""
+    """Payload for updating an existing debt (plaintext, server will encrypt)."""
     creditor_name: Optional[str] = Field(None, min_length=1, max_length=100)
     debt_type: Optional[DebtType] = None
     
-    # Encrypted financial fields
-    balance_encrypted: Optional[str] = None
-    apr_encrypted: Optional[str] = None
-    minimum_payment_encrypted: Optional[str] = None
+    # Financial fields (plaintext)
+    balance: Optional[float] = Field(None, gt=0)
+    apr: Optional[float] = Field(None, ge=0, le=100)
+    minimum_payment: Optional[float] = Field(None, gt=0)
     
     # Optional metadata
     account_number_last4: Optional[str] = Field(None, pattern=r"^\d{4}$")
@@ -58,20 +58,20 @@ class DebtUpdate(BaseModel):
 
 
 class DebtResponse(BaseModel):
-    """Debt data returned to frontend."""
+    """Debt data returned to frontend (plaintext, server decrypts from storage)."""
     id: str
     user_id: str
     creditor_name: str
     debt_type: DebtType
     
-    # Encrypted financial fields (client decrypts)
-    balance_encrypted: str = Field(validation_alias="current_balance_encrypted")
-    apr_encrypted: str = Field(validation_alias="interest_rate_encrypted")
-    minimum_payment_encrypted: str
+    # Financial fields (plaintext, decrypted by server)
+    balance: float
+    apr: float
+    minimum_payment: float
     
     # Metadata
     account_number_last4: Optional[str] = None
-    due_date: Optional[int] = Field(None, validation_alias="due_date_day")
+    due_date: Optional[int] = None
     notes: Optional[str] = None
     
     # Status

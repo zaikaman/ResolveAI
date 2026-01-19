@@ -9,9 +9,9 @@ export interface Debt {
     user_id: string;
     creditor_name: string;
     debt_type: 'credit_card' | 'personal_loan' | 'student_loan' | 'mortgage' | 'auto_loan' | 'medical_bill' | 'other';
-    balance_encrypted: string;
-    apr_encrypted: string;
-    minimum_payment_encrypted: string;
+    balance: number;
+    apr: number;
+    minimum_payment: number;
     account_number_last4?: string;
     due_date?: number;
     notes?: string;

@@ -105,14 +105,6 @@ export function useDebts() {
             setLoading(false);
         }
     }, [removeDebt, setLoading, setError]);
-
-    /**
-     * Set encryption key for the debt service
-     */
-    const setEncryptionKey = useCallback((key: string) => {
-        debtService.setEncryptionKey(key);
-    }, []);
-
     return {
         // State
         debts,
@@ -128,7 +120,6 @@ export function useDebts() {
         markPaidOff,
         deleteDebt,
         setSelectedDebt,
-        setEncryptionKey,
 
         // Computed
         hasDebts: debts.length > 0,

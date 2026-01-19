@@ -7,7 +7,6 @@ from typing import Optional, List
 from app.db.repositories.plan_repo import PlanRepository
 from app.db.repositories.debt_repo import DebtRepository
 from app.services.optimization_service import OptimizationService, DebtInfo
-from app.services.encryption_service import EncryptionService
 from app.models.plan import (
     PlanRequest,
     PlanResponse,
@@ -27,7 +26,8 @@ class PlanService:
     async def generate_plan(
         user_id: str,
         request: PlanRequest,
-        available_for_debt: float
+        available_for_debt: float,
+        token: Optional[str] = None
     ) -> PlanResponse:
         """
         Generate a new repayment plan for a user.
@@ -36,6 +36,7 @@ class PlanService:
             user_id: User UUID
             request: Plan generation request
             available_for_debt: User's available monthly amount for debt
+            token: Optional JWT token for authenticated request
         
         Returns:
             Generated plan
@@ -44,7 +45,7 @@ class PlanService:
             ValidationError: If no debts to plan for
         """
         # Get user's active debts
-        debts = await DebtRepository.get_active_debts(user_id)
+        debts = await DebtRepository.get_active_debts(user_id, token=token)
         
         if not debts:
             raise ValidationError(
@@ -52,26 +53,16 @@ class PlanService:
                 details={"user_id": user_id}
             )
         
-        # Decrypt debt data for calculations
+        # Prepare debt data for calculations (already plaintext from repository)
         debt_infos: List[DebtInfo] = []
         for debt in debts:
-            try:
-                balance = float(EncryptionService.decrypt(debt.balance_encrypted))
-                apr = float(EncryptionService.decrypt(debt.apr_encrypted))
-                min_payment = float(EncryptionService.decrypt(debt.minimum_payment_encrypted))
-                
-                debt_infos.append(DebtInfo(
-                    id=debt.id,
-                    name=debt.creditor_name,
-                    balance=balance,
-                    apr=apr,
-                    minimum_payment=min_payment
-                ))
-            except Exception as e:
-                raise ValidationError(
-                    message=f"Failed to decrypt debt data for {debt.creditor_name}",
-                    details={"debt_id": debt.id, "error": str(e)}
-                )
+            debt_infos.append(DebtInfo(
+                id=debt.id,
+                name=debt.creditor_name,
+                balance=debt.balance,
+                apr=debt.apr,
+                minimum_payment=debt.minimum_payment
+            ))
         
         # Use custom budget if provided, otherwise use user's available amount
         monthly_budget = request.custom_monthly_budget or available_for_debt
@@ -95,7 +86,7 @@ class PlanService:
         months_saved = min_months - result.total_months
         
         # Archive existing active plans
-        await PlanRepository.archive_active_plans(user_id)
+        await PlanRepository.archive_active_plans(user_id, token=token)
         
         # Save new plan
         plan = await PlanRepository.create(
@@ -111,7 +102,8 @@ class PlanService:
             extra_payment=request.extra_monthly_payment,
             monthly_schedule=result.monthly_schedule,
             projections=result.projections,
-            payoff_order=result.payoff_order
+            payoff_order=result.payoff_order,
+            token=token
         )
         
         return plan
@@ -212,12 +204,12 @@ class PlanService:
                 details={"user_id": user_id}
             )
         
-        # Decrypt and prepare debt infos
+        # Prepare debt infos (already plaintext from repository)
         debt_infos: List[DebtInfo] = []
         for debt in debts:
-            balance = float(EncryptionService.decrypt(debt.balance_encrypted))
-            apr = float(EncryptionService.decrypt(debt.apr_encrypted))
-            min_payment = float(EncryptionService.decrypt(debt.minimum_payment_encrypted))
+            balance = debt.balance
+            apr = debt.apr
+            min_payment = debt.minimum_payment
             
             # Apply rate reduction if specified
             if request.rate_reduction and debt.id in request.rate_reduction:
@@ -272,4 +264,4 @@ class PlanService:
         Returns:
             Updated plan
         """
-        return await PlanRepository.update_status(plan_id, user_id, PlanStatus.COMPLETED)
+        return await PlanRepository.update_status(plan_id, user_id, is_completed=True)

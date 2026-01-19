@@ -1,9 +1,8 @@
 /**
- * Debt API service for CRUD operations with encryption
+ * Debt API service for CRUD operations (server-side encryption)
  */
 
 import api from './api';
-import { encryptValue } from '../utils/encryption';
 import type { Debt, DebtListResponse } from '../stores/debtStore';
 
 export interface DebtFormData {
@@ -30,12 +29,6 @@ export interface DebtUpdateData {
 }
 
 class DebtService {
-    private encryptionKey: string | null = null;
-
-    setEncryptionKey(key: string) {
-        this.encryptionKey = key;
-    }
-
     /**
      * Get all debts for the current user
      */
@@ -55,13 +48,9 @@ class DebtService {
     }
 
     /**
-     * Create a new debt (encrypts sensitive fields)
+     * Create a new debt (server encrypts before storage)
      */
     async createDebt(data: DebtFormData): Promise<Debt> {
-        if (!this.encryptionKey) {
-            throw new Error('Encryption key not set');
-        }
-
         console.log('📝 Creating debt with data:', {
             creditor_name: data.creditor_name,
             debt_type: data.debt_type,
@@ -72,22 +61,17 @@ class DebtService {
             notes: data.notes?.substring(0, 50)
         });
 
+        // Server-only encryption: send plaintext, server encrypts
         const payload = {
             creditor_name: data.creditor_name,
             debt_type: data.debt_type,
-            balance_encrypted: encryptValue(data.balance.toString(), this.encryptionKey),
-            apr_encrypted: encryptValue(data.apr.toString(), this.encryptionKey),
-            minimum_payment_encrypted: encryptValue(data.minimum_payment.toString(), this.encryptionKey),
+            balance: data.balance,
+            apr: data.apr,
+            minimum_payment: data.minimum_payment,
             account_number_last4: data.account_number_last4,
             due_date: data.due_date,
             notes: data.notes,
         };
-
-        console.log('🔐 Encrypted payload prepared (lengths):', {
-            balance_encrypted: payload.balance_encrypted.length,
-            apr_encrypted: payload.apr_encrypted.length,
-            minimum_payment_encrypted: payload.minimum_payment_encrypted.length
-        });
 
         try {
             const response = await api.post<Debt>('/debts', payload);
@@ -125,17 +109,15 @@ class DebtService {
             payload.is_active = data.is_active;
         }
 
-        // Encrypt financial fields if provided
-        if (this.encryptionKey) {
-            if (data.balance !== undefined) {
-                payload.balance_encrypted = encryptValue(data.balance.toString(), this.encryptionKey);
-            }
-            if (data.apr !== undefined) {
-                payload.apr_encrypted = encryptValue(data.apr.toString(), this.encryptionKey);
-            }
-            if (data.minimum_payment !== undefined) {
-                payload.minimum_payment_encrypted = encryptValue(data.minimum_payment.toString(), this.encryptionKey);
-            }
+        // Send plaintext financial fields (server encrypts)
+        if (data.balance !== undefined) {
+            payload.balance = data.balance;
+        }
+        if (data.apr !== undefined) {
+            payload.apr = data.apr;
+        }
+        if (data.minimum_payment !== undefined) {
+            payload.minimum_payment = data.minimum_payment;
         }
 
         const response = await api.patch<Debt>(`/debts/${debtId}`, payload);

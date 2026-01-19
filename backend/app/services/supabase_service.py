@@ -121,9 +121,22 @@ class SupabaseService:
             return dict(response.data[0])
         
         except Exception as e:
+            error_details = {
+                "table": table,
+                "error": str(e),
+                "error_type": type(e).__name__
+            }
+            # Add more context from the exception if available
+            if hasattr(e, 'message'):
+                error_details['error_message'] = e.message
+            if hasattr(e, 'details'):
+                error_details['error_details'] = e.details
+            
+            print(f"[SUPABASE] Insert failed: {error_details}")
+            
             raise SupabaseError(
-                message=f"Failed to insert into {table}",
-                details={"table": table, "error": str(e)}
+                message=f"Failed to insert into {table}: {str(e)}",
+                details=error_details
             )
     
     @classmethod
@@ -205,7 +218,8 @@ class SupabaseService:
         cls,
         table: str,
         id_value: str,
-        id_column: str = "id"
+        id_column: str = "id",
+        token: Optional[str] = None
     ) -> Optional[Dict[str, Any]]:
         """
         Get a single row by ID.
@@ -214,11 +228,12 @@ class SupabaseService:
             table: Table name
             id_value: ID value
             id_column: ID column name (default: "id")
+            token: Optional JWT token for RLS
         
         Returns:
             Row data or None if not found
         """
-        rows = await cls.select(table, filters={id_column: id_value})
+        rows = await cls.select(table, filters={id_column: id_value}, token=token)
         return rows[0] if rows else None
 
 

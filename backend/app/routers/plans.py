@@ -3,6 +3,7 @@ Plans router for repayment plan operations.
 """
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from app.models.plan import (
     PlanRequest,
     PlanResponse,
@@ -12,11 +13,13 @@ from app.models.plan import (
     PlanSimulationResponse
 )
 from app.services.plan_service import PlanService
-from app.services.encryption_service import EncryptionService
+from app.services.encryption_service import encryption_service
 from app.dependencies import get_current_user
 from app.models.user import UserResponse
 from app.db.repositories.user_repo import UserRepository
 from app.core.errors import NotFoundError, ValidationError
+
+security = HTTPBearer()
 
 router = APIRouter(prefix="/plans", tags=["plans"])
 
@@ -74,7 +77,8 @@ async def get_plan_summary(
 @router.post("/generate", response_model=PlanResponse, status_code=status.HTTP_201_CREATED)
 async def generate_plan(
     request: PlanRequest,
-    current_user: UserResponse = Depends(get_current_user)
+    current_user: UserResponse = Depends(get_current_user),
+    credentials: HTTPAuthorizationCredentials = Depends(security)
 ) -> PlanResponse:
     """
     Generate a new repayment plan.
@@ -93,17 +97,25 @@ async def generate_plan(
         400: If no debts to plan for or validation fails
     """
     try:
-        # Get user's available for debt amount
-        user_profile = await UserRepository.get_by_id(current_user.id)
-        if not user_profile or not user_profile.available_for_debt_encrypted:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="User has not completed onboarding with financial data"
-            )
+        # Get available_for_debt from request or decrypt from user profile
+        if request.available_for_debt:
+            available = request.available_for_debt
+        elif request.custom_monthly_budget:
+            available = request.custom_monthly_budget
+        else:
+            # Get from user profile (server-encrypted)
+            token = credentials.credentials
+            user_profile = await UserRepository.get_by_id(current_user.id, token=token)
+            if not user_profile or not user_profile.available_for_debt_encrypted:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="User has not completed onboarding with financial data"
+                )
+            # Decrypt server-encrypted value
+            available = float(encryption_service.decrypt_server_only(user_profile.available_for_debt_encrypted))
         
-        available = float(EncryptionService.decrypt(user_profile.available_for_debt_encrypted))
-        
-        return await PlanService.generate_plan(current_user.id, request, available)
+        token = credentials.credentials
+        return await PlanService.generate_plan(current_user.id, request, available, token=token)
     except ValidationError as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -114,7 +126,8 @@ async def generate_plan(
 @router.post("/recalculate", response_model=PlanResponse)
 async def recalculate_plan(
     request: PlanRecalculationRequest,
-    current_user: UserResponse = Depends(get_current_user)
+    current_user: UserResponse = Depends(get_current_user),
+    credentials: HTTPAuthorizationCredentials = Depends(security)
 ) -> PlanResponse:
     """
     Recalculate an existing plan with updated parameters.
@@ -131,11 +144,13 @@ async def recalculate_plan(
         400: If validation fails
     """
     try:
-        # Get user's available for debt amount
-        user_profile = await UserRepository.get_by_id(current_user.id)
-        available = None
-        if user_profile and user_profile.available_for_debt_encrypted:
-            available = float(EncryptionService.decrypt(user_profile.available_for_debt_encrypted))
+        # Get available_for_debt from request or user profile
+        available = request.available_for_debt
+        if not available:
+            token = credentials.credentials
+            user_profile = await UserRepository.get_by_id(current_user.id, token=token)
+            if user_profile and user_profile.available_for_debt_encrypted:
+                available = float(encryption_service.decrypt_server_only(user_profile.available_for_debt_encrypted))
         
         return await PlanService.recalculate_plan(
             user_id=current_user.id,
@@ -159,7 +174,8 @@ async def recalculate_plan(
 @router.post("/simulate", response_model=PlanSimulationResponse)
 async def simulate_scenario(
     request: PlanSimulationRequest,
-    current_user: UserResponse = Depends(get_current_user)
+    current_user: UserResponse = Depends(get_current_user),
+    credentials: HTTPAuthorizationCredentials = Depends(security)
 ) -> PlanSimulationResponse:
     """
     Simulate a what-if scenario without saving.
@@ -178,15 +194,17 @@ async def simulate_scenario(
         400: If no active plan to compare against
     """
     try:
-        # Get user's available for debt amount
-        user_profile = await UserRepository.get_by_id(current_user.id)
-        if not user_profile or not user_profile.available_for_debt_encrypted:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="User has not completed onboarding with financial data"
-            )
-        
-        available = float(EncryptionService.decrypt(user_profile.available_for_debt_encrypted))
+        # Get available_for_debt from request or user profile
+        available = request.available_for_debt
+        if not available:
+            token = credentials.credentials
+            user_profile = await UserRepository.get_by_id(current_user.id, token=token)
+            if not user_profile or not user_profile.available_for_debt_encrypted:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="User has not completed onboarding with financial data"
+                )
+            available = float(encryption_service.decrypt_server_only(user_profile.available_for_debt_encrypted))
         
         return await PlanService.simulate_scenario(current_user.id, request, available)
     except ValidationError as e:

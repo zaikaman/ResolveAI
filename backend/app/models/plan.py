@@ -32,6 +32,7 @@ class PlanRequest(BaseModel):
     # Optional overrides
     start_date: Optional[date] = None
     custom_monthly_budget: Optional[float] = Field(None, gt=0)
+    available_for_debt: Optional[float] = Field(None, gt=0, description="User's available monthly amount (plaintext)")
 
 
 class PaymentScheduleItem(BaseModel):
@@ -117,6 +118,7 @@ class PlanRecalculationRequest(BaseModel):
     strategy: Optional[RepaymentStrategy] = None
     extra_monthly_payment: Optional[float] = Field(None, ge=0)
     custom_monthly_budget: Optional[float] = Field(None, gt=0)
+    available_for_debt: Optional[float] = Field(None, gt=0, description="User's available monthly amount (plaintext)")
     
     # Reason for recalculation
     reason: Optional[str] = None
@@ -127,6 +129,7 @@ class PlanSimulationRequest(BaseModel):
     # Scenario parameters
     strategy: RepaymentStrategy = RepaymentStrategy.AVALANCHE
     extra_monthly_payment: float = Field(0.0, ge=0)
+    available_for_debt: Optional[float] = Field(None, gt=0, description="User's available monthly amount (plaintext)")
     
     # Income change simulation
     income_change: Optional[float] = None  # Positive or negative
@@ -162,7 +165,6 @@ class PlanSimulationResponse(BaseModel):
 class PlanSummaryResponse(BaseModel):
     """Lightweight plan summary for dashboard."""
     id: str
-    status: PlanStatus
     strategy: RepaymentStrategy
     debt_free_date: date
     total_months: int

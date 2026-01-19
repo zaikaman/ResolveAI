@@ -29,7 +29,6 @@ export default function Debts() {
         editDebt,
         deleteDebt,
         markPaidOff,
-        setEncryptionKey,
     } = useDebts();
 
     // Modal states
@@ -44,13 +43,9 @@ export default function Debts() {
     const [extractedDebts, setExtractedDebts] = useState<ExtractedDebt[]>([]);
     const [uploadError, setUploadError] = useState<string | null>(null);
 
-    // TODO: Get encryption key from user session/secure storage
-    const encryptionKey = 'demo-encryption-key';
-
     useEffect(() => {
-        setEncryptionKey(encryptionKey);
         fetchDebts();
-    }, [fetchDebts, setEncryptionKey]);
+    }, [fetchDebts]);
 
     const handleAddDebt = async (data: DebtFormData) => {
         try {
@@ -169,7 +164,6 @@ export default function Debts() {
             <DebtList
                 debts={debts}
                 summary={summary}
-                encryptionKey={encryptionKey}
                 loading={loading}
                 onAddDebt={() => setShowAddModal(true)}
                 onEditDebt={setEditingDebt}

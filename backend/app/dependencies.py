@@ -58,8 +58,8 @@ async def get_current_user(
             details={"error": "invalid_token"}
         )
     
-    # Get user from database
-    user = await UserRepository.get_by_id(user_id)
+    # Get user from database (with token for RLS)
+    user = await UserRepository.get_by_id(user_id, token=token)
     print(f"[AUTH] User found in DB: {user is not None}")
     
     if not user:
@@ -93,7 +93,7 @@ async def get_current_user(
             print(f"[AUTH] Lazy creation successful for user_id: {user.id}")
         except ConflictError:
             # User might have been created concurrently
-            user = await UserRepository.get_by_id(user_id)
+            user = await UserRepository.get_by_id(user_id, token=token)
             if not user:
                 raise AuthenticationError("User creation failed: Conflict detected but user not found")
         except Exception as e:
