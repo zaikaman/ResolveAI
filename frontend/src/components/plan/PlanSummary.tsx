@@ -6,6 +6,7 @@
 import { Calendar, TrendingDown, PiggyBank, Clock, Sparkles } from 'lucide-react';
 import { Card, CardContent } from '../common/Card';
 import { cn } from '../../utils/cn';
+import { formatCurrency, formatDate } from '../../utils/formatting';
 
 interface PlanSummaryProps {
     debtFreeDate: string;
@@ -28,22 +29,6 @@ export function PlanSummary({
     strategy,
     className,
 }: PlanSummaryProps) {
-    const formatCurrency = (value: number) => {
-        return new Intl.NumberFormat('vi-VN', {
-            style: 'currency',
-            currency: 'VND',
-            maximumFractionDigits: 0,
-        }).format(value);
-    };
-
-    const formatDate = (dateStr: string) => {
-        const date = new Date(dateStr);
-        return date.toLocaleDateString('vi-VN', {
-            month: 'long',
-            year: 'numeric',
-        });
-    };
-
     return (
         <div className={cn("space-y-6", className)}>
             {/* Debt-free date highlight */}
@@ -55,7 +40,12 @@ export function PlanSummary({
                         <Sparkles className="h-5 w-5" />
                         <span className="text-sm font-medium uppercase tracking-wide">Debt-Free Date</span>
                     </div>
-                    <p className="text-4xl font-bold mb-2">{formatDate(debtFreeDate)}</p>
+                    <div className="flex flex-col">
+                        <span className="text-progress-100 text-sm font-medium mb-1">Debt-Free Date</span>
+                        <span className="text-3xl font-bold tracking-tight">
+                            {formatDate(debtFreeDate, { month: 'long', year: 'numeric' })}
+                        </span>
+                    </div>
                     <p className="text-progress-100">
                         {totalMonths} months until financial freedom
                     </p>
@@ -71,7 +61,12 @@ export function PlanSummary({
                             <Calendar className="h-4 w-4" />
                             <span>Monthly Payment</span>
                         </div>
-                        <p className="text-2xl font-bold text-slate-900">{formatCurrency(monthlyPayment)}</p>
+                        <div className="flex flex-wrap gap-4 mt-6">
+                            <div className="bg-white/10 backdrop-blur-sm rounded-lg px-4 py-2 border border-white/10">
+                                <span className="text-[10px] uppercase tracking-wider font-semibold block text-blue-100">Monthly</span>
+                                <span className="font-bold text-lg">{formatCurrency(monthlyPayment)}</span>
+                            </div>
+                        </div>
                     </CardContent>
                 </Card>
 
@@ -82,7 +77,10 @@ export function PlanSummary({
                             <TrendingDown className="h-4 w-4" />
                             <span>Total Interest</span>
                         </div>
-                        <p className="text-2xl font-bold text-slate-900">{formatCurrency(totalInterest)}</p>
+                        <div className="text-sm">
+                            <p className="text-slate-500">Total Interest</p>
+                            <p className="font-bold text-slate-900">{formatCurrency(totalInterest)}</p>
+                        </div>
                     </CardContent>
                 </Card>
 
@@ -93,8 +91,10 @@ export function PlanSummary({
                             <PiggyBank className="h-4 w-4" />
                             <span>Interest Saved</span>
                         </div>
-                        <p className="text-2xl font-bold text-progress-600">{formatCurrency(interestSaved)}</p>
-                        <p className="text-xs text-progress-500">vs. minimum payments</p>
+                        <div className="text-sm">
+                            <p className="text-emerald-500">Savings</p>
+                            <p className="font-bold text-emerald-600">{formatCurrency(interestSaved)}</p>
+                        </div>
                     </CardContent>
                 </Card>
 

@@ -3,18 +3,18 @@
  */
 
 /**
- * Format number as Vietnamese Dong currency
+ * Format number as USD currency
  */
-export function formatCurrency(amount: number | string, locale: string = 'vi-VN'): string {
+export function formatCurrency(amount: number | string, locale: string = 'en-US'): string {
   const numAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
   
-  if (isNaN(numAmount)) return '₫0';
+  if (isNaN(numAmount)) return '$0.00';
   
   return new Intl.NumberFormat(locale, {
     style: 'currency',
-    currency: 'VND',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
+    currency: 'USD',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
   }).format(numAmount);
 }
 
@@ -24,7 +24,7 @@ export function formatCurrency(amount: number | string, locale: string = 'vi-VN'
 export function formatDate(
   date: Date | string,
   options?: Intl.DateTimeFormatOptions,
-  locale: string = 'vi-VN'
+  locale: string = 'en-US'
 ): string {
   const dateObj = typeof date === 'string' ? new Date(date) : date;
   
@@ -39,85 +39,65 @@ export function formatDate(
 }
 
 /**
- * Format date to short format (DD/MM/YYYY)
+ * Format date to short format (MM/DD/YYYY)
  */
-export function formatDateShort(date: Date | string, locale: string = 'vi-VN'): string {
+export function formatDateShort(date: Date | string, locale: string = 'en-US'): string {
   return formatDate(date, { year: 'numeric', month: '2-digit', day: '2-digit' }, locale);
 }
 
 /**
  * Format relative time (e.g., "2 days ago")
  */
-export function formatRelativeTime(date: Date | string, locale: string = 'vi-VN'): string {
+export function formatRelativeTime(date: Date | string, locale: string = 'en-US'): string {
   const dateObj = typeof date === 'string' ? new Date(date) : date;
   const now = new Date();
-  const diffMs = now.getTime() - dateObj.getTime();
-  const diffSec = Math.floor(diffMs / 1000);
-  const diffMin = Math.floor(diffSec / 60);
-  const diffHour = Math.floor(diffMin / 60);
-  const diffDay = Math.floor(diffHour / 24);
+  const diffInSeconds = Math.floor((now.getTime() - dateObj.getTime()) / 1000);
   
   const rtf = new Intl.RelativeTimeFormat(locale, { numeric: 'auto' });
   
-  if (diffDay > 0) return rtf.format(-diffDay, 'day');
-  if (diffHour > 0) return rtf.format(-diffHour, 'hour');
-  if (diffMin > 0) return rtf.format(-diffMin, 'minute');
-  return rtf.format(-diffSec, 'second');
+  if (Math.abs(diffInSeconds) < 60) return rtf.format(Math.floor(-diffInSeconds), 'second');
+  
+  const diffInMinutes = Math.floor(diffInSeconds / 60);
+  if (Math.abs(diffInMinutes) < 60) return rtf.format(-diffInMinutes, 'minute');
+  
+  const diffInHours = Math.floor(diffInMinutes / 60);
+  if (Math.abs(diffInHours) < 24) return rtf.format(-diffInHours, 'hour');
+  
+  const diffInDays = Math.floor(diffInHours / 24);
+  if (Math.abs(diffInDays) < 30) return rtf.format(-diffInDays, 'day');
+  
+  const diffInMonths = Math.floor(diffInDays / 30);
+  if (Math.abs(diffInMonths) < 12) return rtf.format(-diffInMonths, 'month');
+  
+  const diffInYears = Math.floor(diffInMonths / 12);
+  return rtf.format(-diffInYears, 'year');
 }
 
 /**
- * Format percentage with specified decimal places
+ * Format percentage
  */
-export function formatPercentage(value: number | string, decimals: number = 2): string {
+export function formatPercent(value: number | string, decimals: number = 2, locale: string = 'en-US'): string {
   const numValue = typeof value === 'string' ? parseFloat(value) : value;
   
   if (isNaN(numValue)) return '0%';
   
-  return `${numValue.toFixed(decimals)}%`;
+  return new Intl.NumberFormat(locale, {
+    style: 'percent',
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
+  }).format(numValue / 100);
 }
 
 /**
- * Format large numbers with K/M/B suffixes
+ * Format numbers in short form (e.g., 1.2M)
  */
-export function formatCompactNumber(value: number | string, locale: string = 'vi-VN'): string {
+export function formatCompactNumber(value: number | string, locale: string = 'en-US'): string {
   const numValue = typeof value === 'string' ? parseFloat(value) : value;
   
   if (isNaN(numValue)) return '0';
   
-  if (Math.abs(numValue) >= 1e9) {
-    return `${(numValue / 1e9).toFixed(1)}B`;
-  }
-  if (Math.abs(numValue) >= 1e6) {
-    return `${(numValue / 1e6).toFixed(1)}M`;
-  }
-  if (Math.abs(numValue) >= 1e3) {
-    return `${(numValue / 1e3).toFixed(1)}K`;
-  }
-  
-  return numValue.toLocaleString(locale);
-}
-
-/**
- * Format duration in months to human readable format
- */
-export function formatDuration(months: number): string {
-  if (months < 12) {
-    return `${months} months`;
-  }
-  
-  const years = Math.floor(months / 12);
-  const remainingMonths = months % 12;
-  
-  if (remainingMonths === 0) {
-    return `${years} ${years === 1 ? 'year' : 'years'}`;
-  }
-  
-  return `${years} ${years === 1 ? 'year' : 'years'} ${remainingMonths} ${remainingMonths === 1 ? 'month' : 'months'}`;
-}
-
-/**
- * Parse currency string to number (remove formatting)
- */
-export function parseCurrency(value: string): number {
-  return parseFloat(value.replace(/[^\d.-]/g, ''));
+  return new Intl.NumberFormat(locale, {
+    notation: 'compact',
+    compactDisplay: 'short',
+  }).format(numValue);
 }

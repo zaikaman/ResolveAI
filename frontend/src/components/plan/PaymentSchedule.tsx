@@ -8,6 +8,7 @@ import { ChevronDown, ChevronUp, Calendar, CheckCircle } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '../common/Card';
 import { Button } from '../common/Button';
 import { cn } from '../../utils/cn';
+import { formatCurrency, formatDateShort } from '../../utils/formatting';
 import type { MonthlyBreakdown } from '../../stores/planStore';
 
 interface PaymentScheduleProps {
@@ -18,22 +19,6 @@ interface PaymentScheduleProps {
 export function PaymentSchedule({ schedule, className }: PaymentScheduleProps) {
     const [expandedMonth, setExpandedMonth] = useState<number | null>(null);
     const [showAll, setShowAll] = useState(false);
-
-    const formatCurrency = (value: number) => {
-        return new Intl.NumberFormat('vi-VN', {
-            style: 'currency',
-            currency: 'VND',
-            maximumFractionDigits: 0,
-        }).format(value);
-    };
-
-    const formatDate = (dateStr: string) => {
-        const date = new Date(dateStr);
-        return date.toLocaleDateString('vi-VN', {
-            month: 'short',
-            year: 'numeric',
-        });
-    };
 
     const displayedSchedule = showAll ? schedule : schedule.slice(0, 12);
 
@@ -82,8 +67,10 @@ export function PaymentSchedule({ schedule, className }: PaymentScheduleProps) {
                                     >
                                         <td className="py-3 px-4">
                                             <div className="flex items-center gap-2">
-                                                <Calendar className="h-4 w-4 text-slate-400" />
-                                                <span className="font-medium text-slate-900">{formatDate(month.date)}</span>
+                                                <Calendar className="w-4 h-4 text-slate-400" />
+                                                <span className="font-semibold text-slate-900">
+                                                    {formatDateShort(month.date)}
+                                                </span>
                                             </div>
                                         </td>
                                         <td className="py-3 px-4 text-right">
@@ -140,7 +127,7 @@ export function PaymentSchedule({ schedule, className }: PaymentScheduleProps) {
                                                                 </div>
                                                             </div>
                                                             <div className="text-right">
-                                                                <p className="font-semibold text-main">{formatCurrency(payment.payment_amount)}</p>
+                                                                <p className="text-slate-900 font-medium">{formatCurrency(payment.payment_amount)}</p>
                                                                 {payment.is_payoff_month ? (
                                                                     <p className="text-xs text-progress-600 font-medium">Paid Off!</p>
                                                                 ) : (

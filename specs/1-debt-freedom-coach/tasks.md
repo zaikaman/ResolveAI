@@ -97,7 +97,7 @@
 - [x] T052 [US1] Create debt optimization service in backend/app/services/optimization_service.py (PuLP linear programming for avalanche/snowball, minimize total interest)
 - [x] T053 [US1] Create debt service in backend/app/services/debt_service.py (CRUD operations, validation, calculate minimum payments)
 - [x] T054 [US1] Create plan service in backend/app/services/plan_service.py (orchestrate agents, generate plan, calculate projections)
-- [x] T055 [US1] Create OCR service in backend/app/services/ocr_service.py (GPT-5-Nano vision API for Vietnamese statement parsing)
+- [x] T055 [US1] Create OCR service in backend/app/services/ocr_service.py (GPT-4o vision API for statement parsing)
 - [x] T056 [US1] Create agent orchestrator in backend/app/agents/orchestrator.py (ReAct pattern coordination, error recovery)
 
 ### Backend - API Layer

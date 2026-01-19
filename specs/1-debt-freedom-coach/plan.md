@@ -5,7 +5,7 @@
 
 ## Summary
 
-ResolveAI is an intelligent AI companion helping Vietnamese users escape debt through personalized plans, real-time adaptation, and behavioral coaching. The system uses a multi-agent architecture powered by GPT-5-Nano for low-latency reasoning, vision-based OCR for Vietnamese financial documents, and Opik-instrumented agents for hallucination-free financial advice. Frontend is React+Vite (TypeScript) deployed to Vercel, backend is FastAPI (Python) with async operations deployed to Render/Railway, data stored in Supabase PostgreSQL with encryption, and Vapi.ai handles creditor negotiation simulation. MVP focuses on end-to-end flow: upload/enter debts → AI analysis → optimized plan → adaptive tracking → negotiation support, with heavy Opik integration for hackathon scoring (Best Use of Opik bonus).
+ResolveAI is an intelligent AI companion helping users escape debt through personalized plans, real-time adaptation, and behavioral coaching. The system uses a multi-agent architecture powered by GPT-4o for low-latency reasoning, vision-based OCR for financial documents, and Opik-instrumented agents for hallucination-free financial advice. Frontend is React+Vite (TypeScript) deployed to Vercel, backend is FastAPI (Python) with async operations deployed to Render/Railway, data stored in Supabase PostgreSQL with encryption, and Vapi.ai handles creditor negotiation simulation. MVP focuses on end-to-end flow: upload/enter debts → AI analysis → optimized plan → adaptive tracking → negotiation support, with heavy Opik integration for hackathon scoring (Best Use of Opik bonus).
 
 ## Technical Context
 
@@ -38,7 +38,7 @@ ResolveAI is an intelligent AI companion helping Vietnamese users escape debt th
 **Performance Goals**: 
 - Plan generation: <3s for 20 debts (spec PERF-001)
 - Payment logging: <500ms UI update (spec PERF-002)
-- Document OCR: <10s for Vietnamese statements (spec PERF-003)
+- Document OCR: <10s for statements (spec PERF-003)
 - Transaction categorization: <5s for 1000 transactions (spec PERF-004)
 - API throughput: 100 req/s per backend instance (spec PERF-010)
 
@@ -91,7 +91,7 @@ ResolveAI is an intelligent AI companion helping Vietnamese users escape debt th
   - Celebratory animations with skip option (spec UX-010)
 - [x] Error message strategy ensures human-readable, actionable content
   - Plain language, empathetic tone, actionable next steps (spec UX-005, UX-006)
-  - Vietnamese localization for all user-facing text
+  - English localization for all user-facing text
 
 **Performance by Design** (Principle III):
 - [x] Response time targets specified (API: <500ms p95, UI: <200ms p95)

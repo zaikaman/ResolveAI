@@ -35,8 +35,8 @@ class UserCreate(BaseModel):
 class UserUpdate(BaseModel):
     """User profile update payload."""
     full_name: Optional[str] = None
-    timezone: Optional[str] = Field(default="Asia/Ho_Chi_Minh", pattern=r"^[A-Za-z_]+/[A-Za-z_]+$")
-    language: Optional[str] = Field(default="vi", pattern=r"^[a-z]{2}$")
+    timezone: Optional[str] = Field(default="America/New_York", pattern=r"^[A-Za-z_]+/[A-Za-z_]+$")
+    language: Optional[str] = Field(default="en", pattern=r"^[a-z]{2}$")
     
     # Financial context (encrypted by client before sending)
     monthly_income_encrypted: Optional[str] = None
@@ -59,8 +59,8 @@ class UserProfile(BaseModel):
     
     # Profile
     full_name: Optional[str] = None
-    timezone: str = "Asia/Ho_Chi_Minh"
-    language: str = "vi"
+    timezone: str = "America/New_York"
+    language: str = "en"
     avatar_url: Optional[str] = None
     
     # Financial context (encrypted)
@@ -89,8 +89,8 @@ class UserResponse(BaseModel):
     email: str
     full_name: Optional[str] = None
     avatar_url: Optional[str] = None
-    timezone: str = "Asia/Ho_Chi_Minh"
-    language: str = "vi"
+    timezone: str = "America/New_York"
+    language: str = "en"
     repayment_strategy: RepaymentStrategy = RepaymentStrategy.AVALANCHE
     notification_enabled: bool = True
     notification_frequency: NotificationFrequency = NotificationFrequency.DAILY

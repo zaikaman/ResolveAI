@@ -40,16 +40,15 @@ export const NOTIFICATION_FREQUENCIES = [
 
 // Languages
 export const LANGUAGES = [
-  { value: 'vi', label: 'Vietnamese' },
   { value: 'en', label: 'English' },
 ] as const;
 
 // Timezones
 export const TIMEZONES = [
-  { value: 'Asia/Ho_Chi_Minh', label: 'Vietnam (GMT+7)' },
-  { value: 'Asia/Bangkok', label: 'Bangkok (GMT+7)' },
-  { value: 'Asia/Singapore', label: 'Singapore (GMT+8)' },
-  { value: 'Asia/Tokyo', label: 'Tokyo (GMT+9)' },
+  { value: 'America/New_York', label: 'Eastern Time (ET)' },
+  { value: 'America/Chicago', label: 'Central Time (CT)' },
+  { value: 'America/Denver', label: 'Mountain Time (MT)' },
+  { value: 'America/Los_Angeles', label: 'Pacific Time (PT)' },
 ] as const;
 
 // Validation Constraints

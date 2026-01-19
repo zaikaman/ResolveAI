@@ -67,8 +67,8 @@ CREATE TABLE users (
     
     -- Profile
     full_name VARCHAR(255),
-    timezone VARCHAR(50) DEFAULT 'Asia/Ho_Chi_Minh',
-    language VARCHAR(10) DEFAULT 'vi',
+    timezone VARCHAR(50) DEFAULT 'America/New_York',
+    language VARCHAR(10) DEFAULT 'en',
     
     -- Financial Context (encrypted at application level before storage)
     monthly_income_encrypted TEXT, -- AES-256 encrypted decimal value

@@ -16,6 +16,7 @@ import {
 } from 'recharts';
 import { Card, CardHeader, CardTitle, CardContent } from '../common/Card';
 import type { PlanProjection } from '../../stores/planStore';
+import { formatCompactNumber, formatCurrency, formatDate } from '../../utils/formatting';
 
 interface PlanTimelineProps {
     projections: PlanProjection[];
@@ -26,41 +27,43 @@ export function PlanTimeline({ projections, className }: PlanTimelineProps) {
     const chartData = useMemo(() => {
         return projections.map((p) => ({
             month: p.month,
-            date: new Date(p.date).toLocaleDateString('vi-VN', { month: 'short', year: '2-digit' }),
+            date: formatDate(p.date, { month: 'short', year: '2-digit' }),
             remaining: p.total_remaining,
             interestPaid: p.cumulative_interest_paid,
             principalPaid: p.cumulative_principal_paid,
         }));
     }, [projections]);
 
-    const formatCurrency = (value: number) => {
-        if (value >= 1000000) {
-            return `${(value / 1000000).toFixed(1)}M`;
-        }
-        if (value >= 1000) {
-            return `${(value / 1000).toFixed(0)}K`;
-        }
-        return value.toString();
-    };
-
     const CustomTooltip = ({ active, payload, label }: any) => {
         if (active && payload && payload.length) {
             return (
                 <div className="bg-white p-4 rounded-lg shadow-lg border border-slate-200">
                     <p className="font-semibold text-slate-900 mb-2">{label}</p>
-                    <div className="space-y-1 text-sm">
-                        <p className="text-main">
-                            Remaining: <span className="font-semibold">{formatCurrency(payload[0]?.value)}</span>
-                        </p>
+                    <div className="space-y-2">
+                        <div className="flex items-center justify-between gap-8">
+                            <div className="flex items-center gap-2">
+                                <div className="w-3 h-3 rounded-full bg-progress-500" />
+                                <span className="text-sm text-slate-600">Balance</span>
+                            </div>
+                            <span className="text-sm font-bold text-slate-900">{formatCurrency(payload[0].value)}</span>
+                        </div>
                         {payload[1] && (
-                            <p className="text-progress-600">
-                                Principal Paid: <span className="font-semibold">{formatCurrency(payload[1]?.value)}</span>
-                            </p>
+                            <div className="flex items-center justify-between gap-8">
+                                <div className="flex items-center gap-2">
+                                    <div className="w-3 h-3 rounded-full bg-progress-600" />
+                                    <span className="text-sm text-slate-600">Principal Paid</span>
+                                </div>
+                                <span className="text-sm font-bold text-slate-900">{formatCurrency(payload[1]?.value)}</span>
+                            </div>
                         )}
                         {payload[2] && (
-                            <p className="text-warm-500">
-                                Interest Paid: <span className="font-semibold">{formatCurrency(payload[2]?.value)}</span>
-                            </p>
+                            <div className="flex items-center justify-between gap-8">
+                                <div className="flex items-center gap-2">
+                                    <div className="w-3 h-3 rounded-full bg-warm-500" />
+                                    <span className="text-sm text-slate-600">Interest Paid</span>
+                                </div>
+                                <span className="text-sm font-bold text-slate-900">{formatCurrency(payload[2]?.value)}</span>
+                            </div>
                         )}
                     </div>
                 </div>
@@ -94,29 +97,24 @@ export function PlanTimeline({ projections, className }: PlanTimelineProps) {
                     <ResponsiveContainer width="100%" height="100%">
                         <AreaChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                             <defs>
-                                <linearGradient id="remainingGradient" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="5%" stopColor="#2563EB" stopOpacity={0.3} />
-                                    <stop offset="95%" stopColor="#2563EB" stopOpacity={0} />
-                                </linearGradient>
-                                <linearGradient id="principalGradient" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="5%" stopColor="#22c55e" stopOpacity={0.3} />
-                                    <stop offset="95%" stopColor="#22c55e" stopOpacity={0} />
+                                <linearGradient id="colorRemaining" x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="5%" stopColor="#2D9F75" stopOpacity={0.1}/>
+                                    <stop offset="95%" stopColor="#2D9F75" stopOpacity={0}/>
                                 </linearGradient>
                             </defs>
-                            <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                            <XAxis
-                                dataKey="date"
-                                tick={{ fontSize: 12, fill: '#64748b' }}
-                                tickLine={{ stroke: '#e2e8f0' }}
-                                axisLine={{ stroke: '#e2e8f0' }}
-                                interval="preserveStartEnd"
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
+                            <XAxis 
+                                dataKey="date" 
+                                axisLine={false}
+                                tickLine={false}
+                                tick={{ fill: '#64748B', fontSize: 12 }}
+                                dy={10}
                             />
-                            <YAxis
-                                tickFormatter={formatCurrency}
-                                tick={{ fontSize: 12, fill: '#64748b' }}
-                                tickLine={{ stroke: '#e2e8f0' }}
-                                axisLine={{ stroke: '#e2e8f0' }}
-                                width={60}
+                            <YAxis 
+                                axisLine={false}
+                                tickLine={false}
+                                tick={{ fill: '#64748B', fontSize: 12 }}
+                                tickFormatter={(value) => formatCompactNumber(value)}
                             />
                             <Tooltip content={<CustomTooltip />} />
                             <Area
@@ -124,7 +122,7 @@ export function PlanTimeline({ projections, className }: PlanTimelineProps) {
                                 dataKey="remaining"
                                 stroke="#2563EB"
                                 strokeWidth={2}
-                                fill="url(#remainingGradient)"
+                                fill="url(#colorRemaining)"
                                 name="Remaining Debt"
                             />
                             <Area

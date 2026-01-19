@@ -8,6 +8,7 @@ import { Card, CardContent } from '../common/Card';
 import { Button } from '../common/Button';
 import { cn } from '../../utils/cn';
 import { decryptValue } from '../../utils/encryption';
+import { formatCurrency } from '../../utils/formatting';
 import type { Debt } from '../../stores/debtStore';
 
 interface DebtCardProps {
@@ -59,14 +60,6 @@ export function DebtCard({
     } catch (e) {
         console.error('Failed to decrypt debt data:', e);
     }
-
-    const formatCurrency = (value: number) => {
-        return new Intl.NumberFormat('vi-VN', {
-            style: 'currency',
-            currency: 'VND',
-            maximumFractionDigits: 0,
-        }).format(value);
-    };
 
     return (
         <Card

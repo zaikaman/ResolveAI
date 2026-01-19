@@ -8,6 +8,7 @@ import { Loader2, CheckCircle, AlertCircle, FileText, Plus, Edit2 } from 'lucide
 import { Card, CardHeader, CardTitle, CardContent } from '../common/Card';
 import { Button } from '../common/Button';
 import { cn } from '../../utils/cn';
+import { formatCurrency } from '../../utils/formatting';
 import type { ExtractedDebt } from '../../services/uploadService';
 
 interface OCRFeedbackProps {
@@ -21,20 +22,10 @@ interface OCRFeedbackProps {
     className?: string;
 }
 
-const debtTypeLabels: Record<string, string> = {
-    credit_card: 'Credit Card',
-    personal_loan: 'Personal Loan',
-    student_loan: 'Student Loan',
-    mortgage: 'Mortgage',
-    auto_loan: 'Auto Loan',
-    medical: 'Medical',
-    other: 'Other',
-};
-
 export function OCRFeedback({
+    extractedDebts = [],
     status,
     progress = 0,
-    extractedDebts = [],
     errorMessage,
     onAddDebt,
     onAddAll,
@@ -55,21 +46,6 @@ export function OCRFeedback({
             onAddAll(extractedDebts.filter((_, i) => !addedDebts.has(i)));
             setAddedDebts(new Set(extractedDebts.map((_, i) => i)));
         }
-    };
-
-    const formatCurrency = (value: number) => {
-        return new Intl.NumberFormat('vi-VN', {
-            style: 'currency',
-            currency: 'VND',
-            maximumFractionDigits: 0,
-        }).format(value);
-    };
-
-    const getConfidenceColor = (confidence: number) => {
-        if (confidence >= 0.9) return 'text-progress-600 bg-progress-100';
-        if (confidence >= 0.7) return 'text-blue-600 bg-blue-100';
-        if (confidence >= 0.5) return 'text-warm-600 bg-warm-100';
-        return 'text-red-600 bg-red-100';
     };
 
     // Idle state
@@ -167,46 +143,23 @@ export function OCRFeedback({
                             )}
                         >
                             <div className="flex items-start justify-between">
-                                <div className="flex-1">
-                                    <div className="flex items-center gap-2 mb-2">
-                                        <h4 className="font-semibold text-slate-900">{debt.creditor_name}</h4>
-                                        <span className={cn(
-                                            "text-xs px-2 py-0.5 rounded-full",
-                                            getConfidenceColor(debt.confidence_score)
-                                        )}>
-                                            {Math.round(debt.confidence_score * 100)}% confidence
+                                <div className="flex-1 min-w-0">
+                                    <h4 className="font-semibold text-slate-900 truncate uppercase tracking-tight">
+                                        {debt.creditor_name}
+                                    </h4>
+                                    <div className="flex flex-wrap gap-x-3 gap-y-1 mt-1">
+                                        <span className="text-xs text-slate-500 font-medium">
+                                            Balance: <span className="text-slate-900">{formatCurrency(debt.balance)}</span>
                                         </span>
-                                        {addedDebts.has(index) && (
-                                            <CheckCircle className="h-4 w-4 text-progress-500" />
-                                        )}
-                                    </div>
-
-                                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
-                                        <div>
-                                            <p className="text-slate-500">Type</p>
-                                            <p className="font-medium text-slate-900">
-                                                {debtTypeLabels[debt.debt_type] || 'Other'}
-                                            </p>
-                                        </div>
-                                        <div>
-                                            <p className="text-slate-500">Balance</p>
-                                            <p className="font-medium text-slate-900">
-                                                {formatCurrency(debt.balance)}
-                                            </p>
-                                        </div>
                                         {debt.apr && (
-                                            <div>
-                                                <p className="text-slate-500">APR</p>
-                                                <p className="font-medium text-slate-900">{debt.apr}%</p>
-                                            </div>
+                                            <span className="text-xs text-slate-500 font-medium">
+                                                APR: <span className="text-slate-900">{debt.apr}%</span>
+                                            </span>
                                         )}
                                         {debt.minimum_payment && (
-                                            <div>
-                                                <p className="text-slate-500">Min. Payment</p>
-                                                <p className="font-medium text-slate-900">
-                                                    {formatCurrency(debt.minimum_payment)}
-                                                </p>
-                                            </div>
+                                            <span className="text-xs text-slate-500 font-medium">
+                                                Min: <span className="text-slate-900">{formatCurrency(debt.minimum_payment)}</span>
+                                            </span>
                                         )}
                                     </div>
                                 </div>
