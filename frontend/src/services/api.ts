@@ -19,10 +19,37 @@ const api: AxiosInstance = axios.create({
 // Request interceptor - Add auth token
 api.interceptors.request.use(
   async (config) => {
-    const { data } = await supabase.auth.getSession();
+    try {
+      // First try to get token from localStorage directly to avoid Supabase lock issues
+      const storageKey = 'sb-lzruskvkrefnfljhdlfp-auth-token';
+      const sessionStr = localStorage.getItem(storageKey);
+      
+      if (sessionStr) {
+        try {
+          const session = JSON.parse(sessionStr);
+          if (session?.access_token) {
+            config.headers.Authorization = `Bearer ${session.access_token}`;
+            console.log('[API] Using token from localStorage for:', config.url);
+            return config;
+          }
+        } catch (parseErr) {
+          console.warn('[API] Failed to parse session from localStorage');
+        }
+      }
+      
+      // Fallback to Supabase getSession if localStorage doesn't have it
+      const { data, error } = await supabase.auth.getSession();
 
-    if (data.session?.access_token) {
-      config.headers.Authorization = `Bearer ${data.session.access_token}`;
+      if (error) {
+        console.warn('[API] Failed to get session from Supabase:', error);
+      } else if (data?.session?.access_token) {
+        config.headers.Authorization = `Bearer ${data.session.access_token}`;
+        console.log('[API] Using token from Supabase for:', config.url);
+      } else {
+        console.warn('[API] No session found for request:', config.url);
+      }
+    } catch (err: any) {
+      console.error('[API] Error in request interceptor:', err.message);
     }
 
     return config;

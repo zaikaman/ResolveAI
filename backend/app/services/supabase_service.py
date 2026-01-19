@@ -1,4 +1,4 @@
-"""
+﻿"""
 Supabase service wrapper for database operations with connection pooling and CRUD helpers.
 """
 from typing import Any, Dict, List, Optional
@@ -6,6 +6,13 @@ from supabase import create_client, Client
 from postgrest.base_request_builder import APIResponse
 from app.config import settings
 from app.core.errors import DatabaseError, SupabaseError
+
+async def init_supabase():
+    """Initialize Supabase client on application startup."""
+    # Force initialization of the singleton
+    SupabaseService.get_client()
+    print("[Supabase] Client initialized")
+
 
 
 class SupabaseService:

@@ -2,7 +2,6 @@
  * Custom hook for authentication with Supabase Google OAuth
  */
 
-import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
 import { supabase } from '../services/supabaseClient';
@@ -10,41 +9,15 @@ import api from '../services/api';
 import type { User, OnboardingData, UserUpdate } from '../types/user';
 
 export function useAuth() {
-  const { user, session, loading, error, setUser, setSession, setLoading, setError, logout, refreshSession } = useAuthStore();
+  const { user, session, loading, error, setUser, setLoading, setError, logout } = useAuthStore();
   const navigate = useNavigate();
-
-  // Initialize auth state on mount
-  useEffect(() => {
-    refreshSession();
-
-    // Listen for auth state changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      setSession(session);
-
-      if (session) {
-        try {
-          // Fetch user profile from backend
-          const response = await api.get<User>('/auth/me');
-          setUser(response.data);
-        } catch (error: any) {
-          console.error('Failed to fetch user profile:', error);
-          setError(error.message || 'Failed to fetch user profile');
-        }
-      } else {
-        setUser(null);
-      }
-    });
-
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, []);
 
   /**
    * Sign in with Google OAuth
    */
   const signInWithGoogle = async () => {
     try {
+      console.log('[useAuth] signInWithGoogle: Starting...');
       setLoading(true);
       setError(null);
 
@@ -59,12 +32,18 @@ export function useAuth() {
         },
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('[useAuth] signInWithGoogle: Error initiating OAuth:', error);
+        setLoading(false);
+        throw error;
+      }
+      console.log('[useAuth] signInWithGoogle: OAuth redirect initiated');
+      // Don't unset loading - we're redirecting away
     } catch (error: any) {
+      console.error('[useAuth] signInWithGoogle: Exception caught:', error);
       setError(error.message || 'Google sign-in failed');
-      throw error;
-    } finally {
       setLoading(false);
+      throw error;
     }
   };
 

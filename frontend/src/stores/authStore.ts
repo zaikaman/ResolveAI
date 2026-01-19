@@ -6,17 +6,20 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { User } from '../types/user';
 import { supabase } from '../services/supabaseClient';
+import api from '../services/api';
 
 interface AuthState {
   user: User | null;
   session: any | null;
   loading: boolean;
+  initializing: boolean;
   error: string | null;
 
   // Actions
   setUser: (user: User | null) => void;
   setSession: (session: any | null) => void;
   setLoading: (loading: boolean) => void;
+  setInitializing: (initializing: boolean) => void;
   setError: (error: string | null) => void;
   logout: () => Promise<void>;
   refreshSession: () => Promise<void>;
@@ -24,10 +27,11 @@ interface AuthState {
 
 export const useAuthStore = create<AuthState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       user: null,
       session: null,
-      loading: false,
+      loading: true,
+      initializing: true,
       error: null,
 
       setUser: (user) => set({ user }),
@@ -35,6 +39,8 @@ export const useAuthStore = create<AuthState>()(
       setSession: (session) => set({ session }),
 
       setLoading: (loading) => set({ loading }),
+
+      setInitializing: (initializing) => set({ initializing }),
 
       setError: (error) => set({ error }),
 
@@ -52,40 +58,73 @@ export const useAuthStore = create<AuthState>()(
 
       refreshSession: async () => {
         try {
+          console.log('[AuthStore] refreshSession: Starting...');
           set({ loading: true, error: null });
+          
           const { data, error } = await supabase.auth.getSession();
 
-          if (error) throw error;
+          if (error) {
+            // Ignore abort errors - they're caused by lock contention
+            if (error.message?.includes('abort')) {
+              console.log('[AuthStore] refreshSession: Aborted (likely lock contention), ignoring');
+              set({ loading: false, initializing: false });
+              return;
+            }
+            console.error('[AuthStore] refreshSession: Supabase getSession error:', error);
+            set({ user: null, session: null, error: error.message });
+            return;
+          }
 
           if (data.session) {
+            console.log('[AuthStore] refreshSession: Session found', data.session.user.id);
             set({ session: data.session });
 
-            // Fetch user profile from our backend
-            const response = await fetch('/api/auth/me', {
-              headers: {
-                'Authorization': `Bearer ${data.session.access_token}`
-              }
-            });
+            // Only fetch user profile if we don't have it or it's stale
+            const currentUser = get().user;
+            if (!currentUser || currentUser.id !== data.session.user.id) {
+              console.log('[AuthStore] refreshSession: Fetching user profile from backend...');
+              try {
+                const response = await api.get('/auth/me');
+                console.log('[AuthStore] refreshSession: Backend response status:', response.status);
 
-            if (response.ok) {
-              const user = await response.json();
-              set({ user });
+                if (response.data) {
+                  console.log('[AuthStore] refreshSession: User profile loaded', response.data.id);
+                  set({ user: response.data });
+                }
+              } catch (err: any) {
+                console.error('[AuthStore] refreshSession: Failed to fetch backend profile', err);
+                // Don't throw - session is valid, user will be created lazily
+                if (err.response?.status !== 401) {
+                  set({ error: 'Failed to load profile' });
+                }
+              }
+            } else {
+              console.log('[AuthStore] refreshSession: User already loaded, skipping fetch');
             }
           } else {
+            console.log('[AuthStore] refreshSession: No session found');
             set({ user: null, session: null });
           }
         } catch (error: any) {
-          set({ error: error.message || 'Session refresh failed' });
+          // Catch any abort errors that slip through
+          if (error.name === 'AbortError' || error.message?.includes('abort')) {
+            console.log('[AuthStore] refreshSession: Caught AbortError, ignoring');
+            set({ loading: false, initializing: false });
+            return;
+          }
+          console.error('[AuthStore] refreshSession: Error', error);
+          set({ user: null, session: null, error: error.message || 'Session refresh failed' });
         } finally {
-          set({ loading: false });
+          console.log('[AuthStore] refreshSession: Finished, setting loading=false');
+          set({ loading: false, initializing: false });
         }
       }
     }),
     {
       name: 'auth-storage',
       partialize: (state) => ({
-        user: state.user,
-        session: state.session
+        // Only persist user, not session (session should come from Supabase)
+        user: state.user
       })
     }
   )

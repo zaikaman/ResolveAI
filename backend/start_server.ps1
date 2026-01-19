@@ -1,0 +1,3 @@
+# Start backend server
+Set-Location $PSScriptRoot
+python -m uvicorn app.main:app --reload --port 8000

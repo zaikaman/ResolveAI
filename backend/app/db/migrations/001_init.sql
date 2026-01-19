@@ -1,270 +1,183 @@
--- ResolveAI Debt Freedom Coach - Initial Schema Migration
--- Created: 2026-01-18
--- Description: Core tables for users, debts, plans, payments, actions, transactions, insights, milestones, reminders, negotiation_scripts
+-- WARNING: This schema is for context only and is not meant to be run.
+-- Table order and constraints may not be valid for execution.
 
--- ==============================================================================
--- USERS TABLE
--- ==============================================================================
-CREATE TABLE users (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    email VARCHAR(255) UNIQUE NOT NULL,
-    created_at TIMESTAMPTZ DEFAULT NOW(),
-    updated_at TIMESTAMPTZ DEFAULT NOW(),
-    
-    -- Profile
-    full_name VARCHAR(255),
-    timezone VARCHAR(50) DEFAULT 'Asia/Ho_Chi_Minh',
-    language VARCHAR(10) DEFAULT 'vi',
-    
-    -- Financial Context (encrypted at application level before storage)
-    monthly_income_encrypted TEXT,
-    monthly_expenses_encrypted TEXT,
-    available_for_debt_encrypted TEXT,
-    
-    -- Preferences
-    repayment_strategy VARCHAR(20) DEFAULT 'avalanche' CHECK (repayment_strategy IN ('avalanche', 'snowball')),
-    notification_enabled BOOLEAN DEFAULT TRUE,
-    notification_time TIME DEFAULT '09:00:00',
-    notification_frequency VARCHAR(20) DEFAULT 'daily' CHECK (notification_frequency IN ('daily', 'weekly', 'custom')),
-    
-    -- Metadata
-    last_login_at TIMESTAMPTZ,
-    onboarding_completed BOOLEAN DEFAULT FALSE,
-    terms_accepted_at TIMESTAMPTZ
+CREATE TABLE public.actions (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL,
+  plan_id uuid NOT NULL,
+  created_at timestamp with time zone DEFAULT now(),
+  action_type character varying NOT NULL CHECK (action_type::text = ANY (ARRAY['payment'::character varying, 'review'::character varying, 'rest'::character varying, 'milestone'::character varying, 'nudge'::character varying]::text[])),
+  action_date date NOT NULL,
+  description text NOT NULL,
+  related_debt_id uuid,
+  suggested_amount numeric,
+  completed boolean DEFAULT false,
+  completed_at timestamp with time zone,
+  priority integer DEFAULT 1 CHECK (priority >= 1 AND priority <= 5),
+  CONSTRAINT actions_pkey PRIMARY KEY (id),
+  CONSTRAINT actions_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id),
+  CONSTRAINT actions_plan_id_fkey FOREIGN KEY (plan_id) REFERENCES public.repayment_plans(id),
+  CONSTRAINT actions_related_debt_id_fkey FOREIGN KEY (related_debt_id) REFERENCES public.debts(id)
 );
-
--- ==============================================================================
--- DEBTS TABLE
--- ==============================================================================
-CREATE TABLE debts (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    created_at TIMESTAMPTZ DEFAULT NOW(),
-    updated_at TIMESTAMPTZ DEFAULT NOW(),
-    
-    -- Debt Details
-    creditor_name VARCHAR(255) NOT NULL,
-    debt_type VARCHAR(50) NOT NULL CHECK (debt_type IN ('credit_card', 'personal_loan', 'student_loan', 'medical_bill', 'auto_loan', 'mortgage', 'other')),
-    
-    -- Financial Data (encrypted)
-    current_balance_encrypted TEXT NOT NULL,
-    original_balance_encrypted TEXT,
-    interest_rate_encrypted TEXT NOT NULL,
-    minimum_payment_encrypted TEXT NOT NULL,
-    
-    -- Dates
-    due_date_day INTEGER CHECK (due_date_day BETWEEN 1 AND 31),
-    account_opened_date DATE,
-    
-    -- Metadata
-    payment_history_score DECIMAL(3, 2) CHECK (payment_history_score BETWEEN 0 AND 1),
-    is_active BOOLEAN DEFAULT TRUE,
-    notes TEXT
+CREATE TABLE public.debts (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  creditor_name character varying NOT NULL,
+  debt_type character varying NOT NULL CHECK (debt_type::text = ANY (ARRAY['credit_card'::character varying, 'personal_loan'::character varying, 'student_loan'::character varying, 'medical_bill'::character varying, 'auto_loan'::character varying, 'mortgage'::character varying, 'other'::character varying]::text[])),
+  current_balance_encrypted text NOT NULL,
+  original_balance_encrypted text,
+  interest_rate_encrypted text NOT NULL,
+  minimum_payment_encrypted text NOT NULL,
+  due_date_day integer CHECK (due_date_day >= 1 AND due_date_day <= 31),
+  account_opened_date date,
+  payment_history_score numeric CHECK (payment_history_score >= 0::numeric AND payment_history_score <= 1::numeric),
+  is_active boolean DEFAULT true,
+  notes text,
+  is_paid_off boolean DEFAULT false,
+  paid_off_at timestamp with time zone,
+  CONSTRAINT debts_pkey PRIMARY KEY (id),
+  CONSTRAINT debts_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id)
 );
-
--- ==============================================================================
--- REPAYMENT PLANS TABLE
--- ==============================================================================
-CREATE TABLE repayment_plans (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    created_at TIMESTAMPTZ DEFAULT NOW(),
-    updated_at TIMESTAMPTZ DEFAULT NOW(),
-    
-    -- Plan Configuration
-    strategy VARCHAR(20) NOT NULL CHECK (strategy IN ('avalanche', 'snowball')),
-    target_debt_free_date DATE NOT NULL,
-    
-    -- Projections
-    total_debt_amount DECIMAL(12, 2) NOT NULL,
-    total_interest_projection DECIMAL(12, 2) NOT NULL,
-    monthly_payment_total DECIMAL(10, 2) NOT NULL,
-    
-    -- Status
-    is_active BOOLEAN DEFAULT TRUE,
-    completed_at TIMESTAMPTZ,
-    
-    -- Plan Details (JSONB for flexibility)
-    payment_schedule JSONB NOT NULL,
-    optimization_metadata JSONB
+CREATE TABLE public.insights (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL,
+  created_at timestamp with time zone DEFAULT now(),
+  analysis_start_date date NOT NULL,
+  analysis_end_date date NOT NULL,
+  top_categories jsonb NOT NULL,
+  identified_leaks jsonb NOT NULL,
+  total_leak_amount numeric NOT NULL,
+  months_saved_if_applied numeric,
+  transaction_count integer NOT NULL,
+  agent_confidence numeric CHECK (agent_confidence >= 0::numeric AND agent_confidence <= 1::numeric),
+  CONSTRAINT insights_pkey PRIMARY KEY (id),
+  CONSTRAINT insights_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id)
 );
-
--- ==============================================================================
--- PAYMENTS TABLE
--- ==============================================================================
-CREATE TABLE payments (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    debt_id UUID NOT NULL REFERENCES debts(id) ON DELETE CASCADE,
-    plan_id UUID REFERENCES repayment_plans(id) ON DELETE SET NULL,
-    created_at TIMESTAMPTZ DEFAULT NOW(),
-    
-    -- Payment Details
-    amount DECIMAL(10, 2) NOT NULL CHECK (amount > 0),
-    payment_date DATE NOT NULL DEFAULT CURRENT_DATE,
-    payment_method VARCHAR(50),
-    
-    -- Status
-    confirmed BOOLEAN DEFAULT TRUE,
-    
-    -- Impact Tracking
-    new_balance DECIMAL(12, 2) NOT NULL,
-    interest_saved DECIMAL(10, 2),
-    
-    -- Notes
-    notes TEXT
+CREATE TABLE public.milestones (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL,
+  created_at timestamp with time zone DEFAULT now(),
+  milestone_type character varying NOT NULL CHECK (milestone_type::text = ANY (ARRAY['debt_paid_off'::character varying, 'percentage_milestone'::character varying, 'consistency_streak'::character varying, 'negotiation_success'::character varying, 'savings_milestone'::character varying]::text[])),
+  title character varying NOT NULL,
+  description text NOT NULL,
+  related_debt_id uuid,
+  achievement_value numeric,
+  badge_name character varying,
+  celebration_shown boolean DEFAULT false,
+  achieved_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT milestones_pkey PRIMARY KEY (id),
+  CONSTRAINT milestones_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id),
+  CONSTRAINT milestones_related_debt_id_fkey FOREIGN KEY (related_debt_id) REFERENCES public.debts(id)
 );
-
--- ==============================================================================
--- ACTIONS TABLE
--- ==============================================================================
-CREATE TABLE actions (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    plan_id UUID NOT NULL REFERENCES repayment_plans(id) ON DELETE CASCADE,
-    created_at TIMESTAMPTZ DEFAULT NOW(),
-    
-    -- Action Details
-    action_type VARCHAR(50) NOT NULL CHECK (action_type IN ('payment', 'review', 'rest', 'milestone', 'nudge')),
-    action_date DATE NOT NULL,
-    description TEXT NOT NULL,
-    
-    -- Optional Payment Details
-    related_debt_id UUID REFERENCES debts(id) ON DELETE CASCADE,
-    suggested_amount DECIMAL(10, 2),
-    
-    -- Status
-    completed BOOLEAN DEFAULT FALSE,
-    completed_at TIMESTAMPTZ,
-    
-    -- Priority
-    priority INTEGER DEFAULT 1 CHECK (priority BETWEEN 1 AND 5)
+CREATE TABLE public.negotiation_scripts (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL,
+  debt_id uuid NOT NULL,
+  created_at timestamp with time zone DEFAULT now(),
+  script_text text NOT NULL,
+  talking_points jsonb NOT NULL,
+  success_probability numeric CHECK (success_probability >= 0::numeric AND success_probability <= 1::numeric),
+  vapi_session_id character varying,
+  vapi_session_status character varying,
+  practice_count integer DEFAULT 0,
+  attempted boolean DEFAULT false,
+  attempt_date date,
+  success boolean,
+  old_interest_rate numeric,
+  new_interest_rate numeric,
+  outcome_notes text,
+  CONSTRAINT negotiation_scripts_pkey PRIMARY KEY (id),
+  CONSTRAINT negotiation_scripts_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id),
+  CONSTRAINT negotiation_scripts_debt_id_fkey FOREIGN KEY (debt_id) REFERENCES public.debts(id)
 );
-
--- ==============================================================================
--- TRANSACTIONS TABLE
--- ==============================================================================
-CREATE TABLE transactions (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    created_at TIMESTAMPTZ DEFAULT NOW(),
-    
-    -- Transaction Details
-    transaction_date DATE NOT NULL,
-    merchant VARCHAR(255),
-    amount DECIMAL(10, 2) NOT NULL,
-    description TEXT,
-    
-    -- Categorization
-    category VARCHAR(50),
-    subcategory VARCHAR(50),
-    is_leak BOOLEAN DEFAULT FALSE,
-    
-    -- Metadata
-    auto_categorized BOOLEAN DEFAULT TRUE,
-    source VARCHAR(50) DEFAULT 'csv_upload'
+CREATE TABLE public.payments (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL,
+  debt_id uuid NOT NULL,
+  plan_id uuid,
+  created_at timestamp with time zone DEFAULT now(),
+  amount numeric NOT NULL CHECK (amount > 0::numeric),
+  payment_date date NOT NULL DEFAULT CURRENT_DATE,
+  payment_method character varying,
+  confirmed boolean DEFAULT true,
+  new_balance numeric NOT NULL,
+  interest_saved numeric,
+  notes text,
+  CONSTRAINT payments_pkey PRIMARY KEY (id),
+  CONSTRAINT payments_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id),
+  CONSTRAINT payments_debt_id_fkey FOREIGN KEY (debt_id) REFERENCES public.debts(id),
+  CONSTRAINT payments_plan_id_fkey FOREIGN KEY (plan_id) REFERENCES public.repayment_plans(id)
 );
-
--- ==============================================================================
--- INSIGHTS TABLE
--- ==============================================================================
-CREATE TABLE insights (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    created_at TIMESTAMPTZ DEFAULT NOW(),
-    
-    -- Analysis Period
-    analysis_start_date DATE NOT NULL,
-    analysis_end_date DATE NOT NULL,
-    
-    -- Findings
-    top_categories JSONB NOT NULL,
-    identified_leaks JSONB NOT NULL,
-    total_leak_amount DECIMAL(10, 2) NOT NULL,
-    
-    -- Impact on Debt
-    months_saved_if_applied DECIMAL(4, 1),
-    
-    -- Metadata
-    transaction_count INTEGER NOT NULL,
-    agent_confidence DECIMAL(3, 2) CHECK (agent_confidence BETWEEN 0 AND 1)
+CREATE TABLE public.reminders (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL,
+  created_at timestamp with time zone DEFAULT now(),
+  reminder_type character varying NOT NULL CHECK (reminder_type::text = ANY (ARRAY['payment_due'::character varying, 'progress_check'::character varying, 're_engagement'::character varying, 'milestone_upcoming'::character varying, 'custom'::character varying]::text[])),
+  title character varying NOT NULL,
+  message text NOT NULL,
+  scheduled_for timestamp with time zone NOT NULL,
+  sent_at timestamp with time zone,
+  is_sent boolean DEFAULT false,
+  is_read boolean DEFAULT false,
+  related_debt_id uuid,
+  related_action_id uuid,
+  CONSTRAINT reminders_pkey PRIMARY KEY (id),
+  CONSTRAINT reminders_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id),
+  CONSTRAINT reminders_related_debt_id_fkey FOREIGN KEY (related_debt_id) REFERENCES public.debts(id),
+  CONSTRAINT reminders_related_action_id_fkey FOREIGN KEY (related_action_id) REFERENCES public.actions(id)
 );
-
--- ==============================================================================
--- MILESTONES TABLE
--- ==============================================================================
-CREATE TABLE milestones (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    created_at TIMESTAMPTZ DEFAULT NOW(),
-    
-    -- Milestone Details
-    milestone_type VARCHAR(50) NOT NULL CHECK (milestone_type IN ('debt_paid_off', 'percentage_milestone', 'consistency_streak', 'negotiation_success', 'savings_milestone')),
-    title VARCHAR(255) NOT NULL,
-    description TEXT NOT NULL,
-    
-    -- Related Data
-    related_debt_id UUID REFERENCES debts(id) ON DELETE SET NULL,
-    achievement_value DECIMAL(10, 2),
-    
-    -- Celebration
-    badge_name VARCHAR(100),
-    celebration_shown BOOLEAN DEFAULT FALSE,
-    
-    -- Metadata
-    achieved_at TIMESTAMPTZ DEFAULT NOW()
+CREATE TABLE public.repayment_plans (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  strategy character varying NOT NULL CHECK (strategy::text = ANY (ARRAY['avalanche'::character varying, 'snowball'::character varying]::text[])),
+  target_debt_free_date date NOT NULL,
+  total_debt_amount numeric NOT NULL,
+  total_interest_projection numeric NOT NULL,
+  monthly_payment_total numeric NOT NULL,
+  is_active boolean DEFAULT true,
+  completed_at timestamp with time zone,
+  payment_schedule jsonb NOT NULL,
+  optimization_metadata jsonb,
+  CONSTRAINT repayment_plans_pkey PRIMARY KEY (id),
+  CONSTRAINT repayment_plans_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id)
 );
-
--- ==============================================================================
--- REMINDERS TABLE
--- ==============================================================================
-CREATE TABLE reminders (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    created_at TIMESTAMPTZ DEFAULT NOW(),
-    
-    -- Reminder Details
-    reminder_type VARCHAR(50) NOT NULL CHECK (reminder_type IN ('payment_due', 'progress_check', 're_engagement', 'milestone_upcoming', 'custom')),
-    title VARCHAR(255) NOT NULL,
-    message TEXT NOT NULL,
-    
-    -- Scheduling
-    scheduled_for TIMESTAMPTZ NOT NULL,
-    sent_at TIMESTAMPTZ,
-    
-    -- Status
-    is_sent BOOLEAN DEFAULT FALSE,
-    is_read BOOLEAN DEFAULT FALSE,
-    
-    -- Related Data
-    related_debt_id UUID REFERENCES debts(id) ON DELETE CASCADE,
-    related_action_id UUID REFERENCES actions(id) ON DELETE CASCADE
+CREATE TABLE public.transactions (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL,
+  created_at timestamp with time zone DEFAULT now(),
+  transaction_date date NOT NULL,
+  merchant character varying,
+  amount numeric NOT NULL,
+  description text,
+  category character varying,
+  subcategory character varying,
+  is_leak boolean DEFAULT false,
+  auto_categorized boolean DEFAULT true,
+  source character varying DEFAULT 'csv_upload'::character varying,
+  CONSTRAINT transactions_pkey PRIMARY KEY (id),
+  CONSTRAINT transactions_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id)
 );
-
--- ==============================================================================
--- NEGOTIATION SCRIPTS TABLE
--- ==============================================================================
-CREATE TABLE negotiation_scripts (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    debt_id UUID NOT NULL REFERENCES debts(id) ON DELETE CASCADE,
-    created_at TIMESTAMPTZ DEFAULT NOW(),
-    
-    -- Script Details
-    script_text TEXT NOT NULL,
-    talking_points JSONB NOT NULL,
-    success_probability DECIMAL(3, 2) CHECK (success_probability BETWEEN 0 AND 1),
-    
-    -- Vapi Integration
-    vapi_session_id VARCHAR(255),
-    vapi_session_status VARCHAR(50),
-    practice_count INTEGER DEFAULT 0,
-    
-    -- Outcome Tracking
-    attempted BOOLEAN DEFAULT FALSE,
-    attempt_date DATE,
-    success BOOLEAN,
-    old_interest_rate DECIMAL(5, 2),
-    new_interest_rate DECIMAL(5, 2),
-    outcome_notes TEXT
+CREATE TABLE public.users (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  email character varying NOT NULL UNIQUE,
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  full_name character varying,
+  timezone character varying DEFAULT 'Asia/Ho_Chi_Minh'::character varying,
+  language character varying DEFAULT 'vi'::character varying,
+  monthly_income_encrypted text,
+  monthly_expenses_encrypted text,
+  available_for_debt_encrypted text,
+  repayment_strategy character varying DEFAULT 'avalanche'::character varying CHECK (repayment_strategy::text = ANY (ARRAY['avalanche'::character varying, 'snowball'::character varying]::text[])),
+  notification_enabled boolean DEFAULT true,
+  notification_time time without time zone DEFAULT '09:00:00'::time without time zone,
+  notification_frequency character varying DEFAULT 'daily'::character varying CHECK (notification_frequency::text = ANY (ARRAY['daily'::character varying, 'weekly'::character varying, 'custom'::character varying]::text[])),
+  last_login_at timestamp with time zone,
+  onboarding_completed boolean DEFAULT false,
+  terms_accepted_at timestamp with time zone,
+  CONSTRAINT users_pkey PRIMARY KEY (id)
 );

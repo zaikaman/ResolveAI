@@ -7,6 +7,19 @@ from fastapi.responses import JSONResponse
 from app.config import settings
 from app.core.errors import AppError
 
+from contextlib import asynccontextmanager
+from app.services.supabase_service import init_supabase
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Application lifespan handler."""
+    # Startup: Initialize Supabase async client
+    await init_supabase()
+    print("[LifeSpan] Supabase async client initialized")
+    yield
+    # Shutdown logic if any (e.g. close client)
+    print("[LifeSpan] Shutdown")
+
 # Create FastAPI app
 app = FastAPI(
     title="ResolveAI Debt Freedom Coach API",
@@ -14,6 +27,7 @@ app = FastAPI(
     version="0.1.0",
     docs_url="/docs" if settings.DEBUG else None,
     redoc_url="/redoc" if settings.DEBUG else None,
+    lifespan=lifespan
 )
 
 # Configure CORS
@@ -73,13 +87,11 @@ async def root() -> dict[str, str]:
 
 
 # Import and register routers
-from app.routers import auth, health
+from app.routers import auth, health, debts, plans, uploads
 
 app.include_router(auth.router, prefix="/api")
 app.include_router(health.router, prefix="/api")
+app.include_router(debts.router, prefix="/api")
+app.include_router(plans.router, prefix="/api")
+app.include_router(uploads.router, prefix="/api")
 
-# Additional routers will be added in later phases
-# from app.routers import debts, plans, payments
-# app.include_router(debts.router, prefix="/api")
-# app.include_router(plans.router, prefix="/api")
-# app.include_router(payments.router, prefix="/api")

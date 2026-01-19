@@ -6,6 +6,7 @@ export interface ApiError {
   error: string;
   message: string;
   details?: Record<string, any>;
+  detail?: any; // For standard FastAPI/Pydantic errors
 }
 
 export interface ApiResponse<T> {

@@ -10,4 +10,24 @@ if (!supabaseUrl || !supabaseAnonKey) {
   console.error('Missing Supabase environment variables. Check .env file.')
 }
 
-export const supabase: SupabaseClient = createClient(supabaseUrl, supabaseAnonKey)
+// Singleton pattern to prevent multiple client instances
+let supabaseInstance: SupabaseClient | null = null
+
+function getSupabaseClient(): SupabaseClient {
+  if (!supabaseInstance) {
+    supabaseInstance = createClient(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        autoRefreshToken: true,
+        persistSession: true,
+        detectSessionInUrl: false, // Disabled to prevent Navigator Lock conflict in OAuth flow
+        flowType: 'implicit',
+        storage: window.localStorage,
+        storageKey: 'resolveai-auth',
+        debug: false,
+      }
+    })
+  }
+  return supabaseInstance
+}
+
+export const supabase = getSupabaseClient()

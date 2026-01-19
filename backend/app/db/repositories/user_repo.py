@@ -15,12 +15,13 @@ class UserRepository:
     TABLE = "users"
     
     @staticmethod
-    async def create(user_data: UserCreate) -> UserProfile:
+    async def create(user_data: UserCreate, token: Optional[str] = None) -> UserProfile:
         """
         Create a new user.
         
         Args:
             user_data: User creation data
+            token: Optional JWT token for authenticated request
         
         Returns:
             Created user profile
@@ -41,14 +42,25 @@ class UserRepository:
         db_data = {
             "email": user_data.email,
             "full_name": user_data.full_name,
-            "avatar_url": user_data.avatar_url,
             "created_at": datetime.utcnow().isoformat(),
             "updated_at": datetime.utcnow().isoformat()
         }
         
+        # Note: avatar_url is not in the users table schema, so we skip it
+        # If needed in the future, add it to the migration first
+        
+        if user_data.id:
+            db_data["id"] = user_data.id
+        
         # Insert user
-        result = await SupabaseService.insert(UserRepository.TABLE, db_data)
-        return UserProfile(**result)
+        try:
+            print(f"[USER_REPO] Creating user in DB: {db_data}")
+            result = await SupabaseService.insert(UserRepository.TABLE, db_data, token=token)
+            print(f"[USER_REPO] User created successfully: {result.get('id')}")
+            return UserProfile(**result)
+        except Exception as e:
+            print(f"[USER_REPO] Error creating user: {e}")
+            raise e
     
     @staticmethod
     async def get_by_id(user_id: str) -> Optional[UserProfile]:

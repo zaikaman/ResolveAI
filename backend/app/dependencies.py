@@ -2,11 +2,12 @@
 FastAPI dependencies for authentication and authorization.
 """
 
+from datetime import datetime
 from typing import Optional
 from fastapi import Depends, Header
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from app.core.security import verify_supabase_jwt, extract_user_id_from_token
-from app.core.errors import AuthenticationError
+from app.core.errors import AuthenticationError, ConflictError
 from app.db.repositories.user_repo import UserRepository
 from app.models.user import UserProfile
 
@@ -41,10 +42,17 @@ async def get_current_user(
     token = credentials.credentials
     
     # Verify Supabase JWT token
-    payload = verify_supabase_jwt(token)
+    try:
+        payload = verify_supabase_jwt(token)
+    except Exception as e:
+        print(f"[AUTH] Token verification failed: {e}")
+        raise e
+        
     user_id = payload.get("sub")
+    print(f"[AUTH] Token verified for user_id: {user_id}")
     
     if not user_id:
+        print("[AUTH] User ID missing in token")
         raise AuthenticationError(
             message="Invalid token: missing user ID",
             details={"error": "invalid_token"}
@@ -52,12 +60,45 @@ async def get_current_user(
     
     # Get user from database
     user = await UserRepository.get_by_id(user_id)
+    print(f"[AUTH] User found in DB: {user is not None}")
     
     if not user:
-        raise AuthenticationError(
-            message="User not found",
-            details={"error": "user_not_found", "user_id": user_id}
-        )
+        # Lazy creation: User exists in Supabase Auth but not in public.users
+        # Create the user record using token data
+        print(f"[AUTH] Initiating lazy creation for user_id: {user_id}")
+        from app.models.user import UserCreate
+        
+        email = payload.get("email")
+        user_metadata = payload.get("user_metadata", {})
+        print(f"[AUTH] User metadata: email={email}, name={user_metadata.get('full_name')}")
+        print(f"[AUTH] Full payload keys: {list(payload.keys())}")
+        
+        if not email:
+            print("[AUTH] Email missing in token payload")
+            raise AuthenticationError(
+                message="Token missing email",
+                details={"error": "invalid_token_payload"}
+            )
+            
+        try:
+            user_data = UserCreate(
+                id=user_id,
+                email=email,
+                full_name=user_metadata.get("full_name") or user_metadata.get("name") or email.split("@")[0],
+                avatar_url=user_metadata.get("avatar_url") or user_metadata.get("picture")
+            )
+            
+            print(f"[AUTH] Attempting to create user with data: id={user_data.id}, email={user_data.email}, name={user_data.full_name}")
+            user = await UserRepository.create(user_data, token=token)
+            print(f"[AUTH] Lazy creation successful for user_id: {user.id}")
+        except ConflictError:
+            # User might have been created concurrently
+            user = await UserRepository.get_by_id(user_id)
+            if not user:
+                raise AuthenticationError("User creation failed: Conflict detected but user not found")
+        except Exception as e:
+            print(f"[AUTH] Lazy creation failed: {e}")
+            raise AuthenticationError(f"Failed to create user record: {str(e)}")
     
     return user
 

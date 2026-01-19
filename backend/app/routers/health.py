@@ -46,7 +46,6 @@ async def readiness_check() -> dict[str, Any]:
     
     # Check database connectivity
     try:
-        client = SupabaseService.get_client()
         # Simple query to verify connection
         result = await SupabaseService.select("users", limit=1)
         checks["database"] = "healthy"

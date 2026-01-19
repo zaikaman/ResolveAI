@@ -58,8 +58,8 @@
 - [X] T030 [P] Create auth store in frontend/src/stores/authStore.ts (Zustand state for user session)
 - [X] T031 [P] Create auth API service in frontend/src/services/api.ts (Axios wrapper with auth interceptor)
 - [X] T032 [P] Create auth hook in frontend/src/hooks/useAuth.ts (Google OAuth, logout)
-- [ ] T033 [P] Create common UI components in frontend/src/components/common/ (Button, Input, Card, Modal, Toast)
-- [ ] T034 [P] Create layout components in frontend/src/components/layout/ (AppShell, Nav, Sidebar, MobileMenu)
+- [X] T033 [P] Create common UI components in frontend/src/components/common/ (Button, Input, Card, Modal, Toast)
+- [X] T034 [P] Create layout components in frontend/src/components/layout/ (AppShell, Nav, Sidebar, MobileMenu)
 - [X] T035 [P] Create TypeScript types in frontend/src/types/ (user.ts, api.ts)
 - [X] T036 [P] Create validation schemas in frontend/src/utils/validation.ts (Zod schemas for forms)
 - [X] T037 [P] Create formatting utilities in frontend/src/utils/formatting.ts (currency, date, percentage formatters)
@@ -84,55 +84,55 @@
 
 ### Backend - Data Layer
 
-- [ ] T045 [P] [US1] Create debt Pydantic models in backend/app/models/debt.py (DebtCreate, DebtUpdate, DebtResponse, DebtType enum)
-- [ ] T046 [P] [US1] Create plan Pydantic models in backend/app/models/plan.py (PlanRequest, PlanResponse, PlanRecalculation, PaymentSchedule)
-- [ ] T047 [P] [US1] Create upload Pydantic models in backend/app/models/upload.py (UploadResponse, OCRResult)
-- [ ] T048 [US1] Create debt repository in backend/app/db/repositories/debt_repo.py (CRUD with field encryption for balances/rates)
-- [ ] T049 [US1] Create repayment plan repository in backend/app/db/repositories/plan_repo.py (create, update, get active plan)
+- [x] T045 [P] [US1] Create debt Pydantic models in backend/app/models/debt.py (DebtCreate, DebtUpdate, DebtResponse, DebtType enum)
+- [x] T046 [P] [US1] Create plan Pydantic models in backend/app/models/plan.py (PlanRequest, PlanResponse, PlanRecalculation, PaymentSchedule)
+- [x] T047 [P] [US1] Create upload Pydantic models in backend/app/models/upload.py (UploadResponse, OCRResult)
+- [x] T048 [US1] Create debt repository in backend/app/db/repositories/debt_repo.py (CRUD with field encryption for balances/rates)
+- [x] T049 [US1] Create repayment plan repository in backend/app/db/repositories/plan_repo.py (create, update, get active plan)
 
 ### Backend - Business Logic
 
-- [ ] T050 [US1] Create AssessmentAgent in backend/app/agents/assessment_agent.py (analyze debts, validate sustainability, calculate available income, recommend strategy)
-- [ ] T051 [US1] Create OptimizationAgent in backend/app/agents/optimization_agent.py (call PuLP for debt optimization, support avalanche/snowball strategies)
-- [ ] T052 [US1] Create debt optimization service in backend/app/services/optimization_service.py (PuLP linear programming for avalanche/snowball, minimize total interest)
-- [ ] T053 [US1] Create debt service in backend/app/services/debt_service.py (CRUD operations, validation, calculate minimum payments)
-- [ ] T054 [US1] Create plan service in backend/app/services/plan_service.py (orchestrate agents, generate plan, calculate projections)
-- [ ] T055 [US1] Create OCR service in backend/app/services/ocr_service.py (GPT-5-Nano vision API for Vietnamese statement parsing)
-- [ ] T056 [US1] Create agent orchestrator in backend/app/agents/orchestrator.py (ReAct pattern coordination, error recovery)
+- [x] T050 [US1] Create AssessmentAgent in backend/app/agents/assessment_agent.py (analyze debts, validate sustainability, calculate available income, recommend strategy)
+- [x] T051 [US1] Create OptimizationAgent in backend/app/agents/optimization_agent.py (call PuLP for debt optimization, support avalanche/snowball strategies)
+- [x] T052 [US1] Create debt optimization service in backend/app/services/optimization_service.py (PuLP linear programming for avalanche/snowball, minimize total interest)
+- [x] T053 [US1] Create debt service in backend/app/services/debt_service.py (CRUD operations, validation, calculate minimum payments)
+- [x] T054 [US1] Create plan service in backend/app/services/plan_service.py (orchestrate agents, generate plan, calculate projections)
+- [x] T055 [US1] Create OCR service in backend/app/services/ocr_service.py (GPT-5-Nano vision API for Vietnamese statement parsing)
+- [x] T056 [US1] Create agent orchestrator in backend/app/agents/orchestrator.py (ReAct pattern coordination, error recovery)
 
 ### Backend - API Layer
 
-- [ ] T057 [US1] Create debts router in backend/app/routers/debts.py (GET /debts, POST /debts, PATCH /debts/{id}, DELETE /debts/{id})
-- [ ] T058 [US1] Create plans router in backend/app/routers/plans.py (POST /plans/generate, POST /plans/recalculate, POST /plans/simulate)
-- [ ] T059 [US1] Create uploads router in backend/app/routers/uploads.py (POST /uploads/document, GET /uploads/{id}/status)
+- [x] T057 [US1] Create debts router in backend/app/routers/debts.py (GET /debts, POST /debts, PATCH /debts/{id}, DELETE /debts/{id})
+- [x] T058 [US1] Create plans router in backend/app/routers/plans.py (POST /plans/generate, POST /plans/recalculate, POST /plans/simulate)
+- [x] T059 [US1] Create uploads router in backend/app/routers/uploads.py (POST /uploads/document, GET /uploads/{id}/status)
 
 ### Frontend - State & Services
 
-- [ ] T060 [P] [US1] Create debt store in frontend/src/stores/debtStore.ts (Zustand state for debts list)
-- [ ] T061 [P] [US1] Create plan store in frontend/src/stores/planStore.ts (Zustand state for active repayment plan)
-- [ ] T062 [US1] Create debt API service in frontend/src/services/debtService.ts (CRUD operations with encryption)
-- [ ] T063 [US1] Create plan API service in frontend/src/services/planService.ts (generate, recalculate, simulate)
-- [ ] T064 [US1] Create upload API service in frontend/src/services/uploadService.ts (document upload, OCR polling)
+- [x] T060 [P] [US1] Create debt store in frontend/src/stores/debtStore.ts (Zustand state for debts list)
+- [x] T061 [P] [US1] Create plan store in frontend/src/stores/planStore.ts (Zustand state for active repayment plan)
+- [x] T062 [US1] Create debt API service in frontend/src/services/debtService.ts (CRUD operations with encryption)
+- [x] T063 [US1] Create plan API service in frontend/src/services/planService.ts (generate, recalculate, simulate)
+- [x] T064 [US1] Create upload API service in frontend/src/services/uploadService.ts (document upload, OCR polling)
 
 ### Frontend - UI Components
 
-- [ ] T065 [P] [US1] Create DebtCard component in frontend/src/components/debt/DebtCard.tsx (display single debt with balance, rate, creditor)
-- [ ] T066 [P] [US1] Create DebtForm component in frontend/src/components/debt/DebtForm.tsx (manual debt entry with validation)
-- [ ] T067 [P] [US1] Create DebtList component in frontend/src/components/debt/DebtList.tsx (list all debts with actions)
-- [ ] T068 [P] [US1] Create FileDropzone component in frontend/src/components/upload/FileDropzone.tsx (react-dropzone wrapper, file validation)
-- [ ] T069 [P] [US1] Create OCRFeedback component in frontend/src/components/upload/OCRFeedback.tsx (loading state, progress, extracted data preview)
-- [ ] T070 [P] [US1] Create PlanTimeline component in frontend/src/components/plan/PlanTimeline.tsx (Recharts line chart showing debt reduction over time)
-- [ ] T071 [P] [US1] Create PaymentSchedule component in frontend/src/components/plan/PaymentSchedule.tsx (table showing monthly payment breakdown per debt)
-- [ ] T072 [P] [US1] Create PlanSummary component in frontend/src/components/plan/PlanSummary.tsx (debt-free date, total interest, interest saved)
+- [x] T065 [P] [US1] Create DebtCard component in frontend/src/components/debt/DebtCard.tsx (display single debt with balance, rate, creditor)
+- [x] T066 [P] [US1] Create DebtForm component in frontend/src/components/debt/DebtForm.tsx (manual debt entry with validation)
+- [x] T067 [P] [US1] Create DebtList component in frontend/src/components/debt/DebtList.tsx (list all debts with actions)
+- [x] T068 [P] [US1] Create FileDropzone component in frontend/src/components/upload/FileDropzone.tsx (react-dropzone wrapper, file validation)
+- [x] T069 [P] [US1] Create OCRFeedback component in frontend/src/components/upload/OCRFeedback.tsx (loading state, progress, extracted data preview)
+- [x] T070 [P] [US1] Create PlanTimeline component in frontend/src/components/plan/PlanTimeline.tsx (Recharts line chart showing debt reduction over time)
+- [x] T071 [P] [US1] Create PaymentSchedule component in frontend/src/components/plan/PaymentSchedule.tsx (table showing monthly payment breakdown per debt)
+- [x] T072 [P] [US1] Create PlanSummary component in frontend/src/components/plan/PlanSummary.tsx (debt-free date, total interest, interest saved)
 
 ### Frontend - Pages & Integration
 
-- [ ] T073 [US1] Create Debts page in frontend/src/pages/Debts.tsx (manage debts: add manual, upload OCR, edit, delete)
-- [ ] T074 [US1] Create Plan page in frontend/src/pages/Plan.tsx (full plan view with timeline, schedule, summary)
-- [ ] T075 [US1] Create hooks in frontend/src/hooks/useDebts.ts (fetch debts, add debt, update debt, delete debt)
-- [ ] T076 [US1] Create hooks in frontend/src/hooks/usePlan.ts (generate plan, recalculate plan, simulate scenarios)
-- [ ] T077 [US1] Integrate onboarding flow in frontend/src/pages/Home.tsx (income/expenses input → add debts → generate plan)
-- [ ] T078 [US1] Test end-to-end flow: signup → add 3 debts → generate plan → verify timeline shows debt-free date <3s
+- [x] T073 [US1] Create Debts page in frontend/src/pages/Debts.tsx (manage debts: add manual, upload OCR, edit, delete)
+- [x] T074 [US1] Create Plan page in frontend/src/pages/Plan.tsx (full plan view with timeline, schedule, summary)
+- [x] T075 [US1] Create hooks in frontend/src/hooks/useDebts.ts (fetch debts, add debt, update debt, delete debt)
+- [x] T076 [US1] Create hooks in frontend/src/hooks/usePlan.ts (generate plan, recalculate plan, simulate scenarios)
+- [x] T077 [US1] Integrate onboarding flow in frontend/src/pages/Home.tsx (income/expenses input → add debts → generate plan)
+- [x] T078 [US1] Test end-to-end flow: signup → add 3 debts → generate plan → verify timeline shows debt-free date <3s
 
 ---
 

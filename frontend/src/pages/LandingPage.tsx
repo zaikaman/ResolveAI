@@ -1,4 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../hooks/useAuth';
 import { sendContactEmail } from '../services/emailService';
 
 // ContactSection component with form state and email submission
@@ -91,9 +93,18 @@ const ContactSection: React.FC = () => {
 };
 
 const LandingPage: React.FC = () => {
+    const { user, loading } = useAuth();
+    const navigate = useNavigate();
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [activeFaq, setActiveFaq] = useState<number | null>(1);
     const [isDarkMode, setIsDarkMode] = useState(false);
+
+    // Redirect to dashboard if already logged in
+    useEffect(() => {
+        if (user && !loading) {
+            navigate('/dashboard', { replace: true });
+        }
+    }, [user, loading, navigate]);
 
 
 
@@ -133,7 +144,7 @@ const LandingPage: React.FC = () => {
                     </ul>
                     <div className="flex gap-10 items-center ">
                         {/* btn */}
-                        <a href="#contact" className="btn1 dark:shadow-white/10 hover:bg-emerald-500">Get Free Plan</a>
+                        <button onClick={() => navigate('/login')} className="btn1 dark:shadow-white/10 hover:bg-emerald-500">Get Free Plan</button>
 
                         <div className="flex gap-2 5">
                             {/* moon and sun */}
@@ -159,7 +170,7 @@ const LandingPage: React.FC = () => {
                             <li className="hover:text-main" onClick={() => setIsMenuOpen(false)}><a href="#faq">FAQ</a></li>
                             <li className="hover:text-main" onClick={() => setIsMenuOpen(false)}><a href="#contact">Contact</a></li>
                             {/* btn */}
-                            <a href="" className="btn1 dark:shadow-white/10 hover:bg-emerald-500" onClick={() => setIsMenuOpen(false)}>Get Free Plan</a>
+                            <button className="btn1 dark:shadow-white/10 hover:bg-emerald-500" onClick={() => { setIsMenuOpen(false); navigate('/login'); }}>Get Free Plan</button>
                         </ul>
                     </div>
                 </div>
@@ -172,7 +183,7 @@ const LandingPage: React.FC = () => {
                         <p className="text-base text-color-slate-500 dark:text-white">Your personalized AI financial coach. Create an optimized payoff plan in under 3 minutes and achieve lasting financial health.</p>
                         {/* hero btns */}
                         <div className="flex  gap-2 ">
-                            <a href="#contact" className="btn1 dark:shadow-white/10 hover:bg-transparent dark:text-white hover:text-main border-2 border-main ">Start Assessment</a>
+                            <button onClick={() => navigate('/login')} className="btn1 dark:shadow-white/10 hover:bg-transparent dark:text-white hover:text-main border-2 border-main ">Start Assessment</button>
                             <a href="#how-it-works" className="btn2 dark:shadow-white/10 hover:bg-main hover:text-white dark:text-white">How It Works</a>
                         </div>
                     </div>

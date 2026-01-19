@@ -27,6 +27,7 @@ async def get_current_user_info(
         Current user information
     """
     try:
+        print(f"[AUTH_ROUTER] /me called for user_id: {current_user.id}")
         # Update last login timestamp
         await UserRepository.update_last_login(current_user.id)
         

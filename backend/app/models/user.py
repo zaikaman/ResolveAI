@@ -26,6 +26,7 @@ class NotificationFrequency(str, Enum):
 class UserCreate(BaseModel):
     """User creation payload (Google OAuth profile)."""
     email: EmailStr
+    id: Optional[str] = None  # Supabase Auth User ID
     full_name: Optional[str] = None
     google_id: Optional[str] = None  # Google OAuth sub claim
     avatar_url: Optional[str] = None  # Google profile picture

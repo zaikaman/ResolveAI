@@ -249,3 +249,7 @@ def app_error_to_http_exception(error: AppError) -> HTTPException:
         status_code=error.status_code,
         detail=error.to_dict()
     )
+
+
+# Alias for backward compatibility or cleaner imports
+ExternalServiceError = ExternalError
