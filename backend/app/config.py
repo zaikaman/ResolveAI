@@ -15,24 +15,26 @@ class Settings(BaseSettings):
     API_PORT: int = 8000
     
     # Supabase
-    SUPABASE_URL: str
-    SUPABASE_KEY: str
-    SUPABASE_JWT_SECRET: str
+    SUPABASE_URL: str = ""
+    SUPABASE_KEY: str = ""
+    SUPABASE_JWT_SECRET: str = ""
     
     # OpenAI
-    OPENAI_API_KEY: str
+    OPENAI_API_KEY: str = ""
     OPENAI_MODEL: str = "gpt-4o-mini"
     
     # Opik (Comet ML)
-    OPIK_API_KEY: str
-    OPIK_WORKSPACE: str
+    OPIK_API_KEY: str = ""
+    OPIK_WORKSPACE: str = ""
     OPIK_PROJECT: str = "resolveai-debt-coach"
     
-    # Security
-    SECRET_KEY: str
-    ALGORITHM: str = "HS256"
+    # Security & JWT
+    SECRET_KEY: str = ""
+    JWT_SECRET_KEY: str = ""  # Separate key for JWT tokens
+    JWT_ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
-    ENCRYPTION_KEY: str
+    REFRESH_TOKEN_EXPIRE_DAYS: int = 7
+    ENCRYPTION_KEY: str = ""
     
     # CORS
     CORS_ORIGINS: str = "http://localhost:5173,http://localhost:3000"

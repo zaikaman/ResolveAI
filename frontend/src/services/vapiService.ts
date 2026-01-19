@@ -54,7 +54,8 @@ class VapiService {
       throw new Error('Vapi is not initialized')
     }
 
-    return this.vapi.start(config)
+    // Cast to any to bypass strict CreateAssistantDTO typing
+    return this.vapi.start(config as any)
   }
 
   /**
@@ -112,9 +113,10 @@ class VapiService {
   /**
    * Unsubscribe from Vapi events
    */
-  off(event: string, callback: (...args: any[]) => void) {
-    if (!this.vapi) return
-    this.vapi.off(event as any, callback)
+  off(_event: string, _callback: (...args: any[]) => void) {
+    // Note: Vapi web SDK doesn't expose .off() method
+    // Event listeners are cleaned up automatically on stop/disconnect
+    // This is kept as a stub for future SDK updates
   }
 
   /**

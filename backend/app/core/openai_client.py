@@ -1,7 +1,9 @@
 """
 OpenAI client singleton for GPT-5-Nano API calls
 """
+from typing import cast, Any
 from openai import AsyncOpenAI
+from openai.types.chat import ChatCompletionMessageParam
 from app.config import settings
 
 
@@ -30,9 +32,12 @@ class OpenAIClient:
         """Execute a chat completion and return response text"""
         client = cls.get_client()
         
+        # Cast messages to the expected type
+        typed_messages = cast(list[ChatCompletionMessageParam], messages)
+        
         response = await client.chat.completions.create(
             model=model or settings.OPENAI_MODEL,
-            messages=messages,
+            messages=typed_messages,
             temperature=temperature,
             max_tokens=max_tokens,
         )

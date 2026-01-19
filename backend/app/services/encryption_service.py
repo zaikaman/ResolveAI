@@ -9,7 +9,7 @@ from app.config import settings
 class EncryptionService:
     """Server-side encryption for sensitive data"""
     
-    def __init__(self):
+    def __init__(self) -> None:
         # Ensure encryption key is valid Fernet key (32 bytes base64 encoded)
         key = settings.ENCRYPTION_KEY.encode()
         self.fernet = Fernet(key)

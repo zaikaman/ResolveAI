@@ -27,8 +27,8 @@
 - [X] T006 [P] Configure TailwindCSS with design system in frontend/tailwind.config.js (8px grid, color palette: green/progress, warm/encouragement)
 - [X] T007 [P] Configure Python code quality tools in backend/pyproject.toml (black, ruff, mypy)
 - [X] T008 [P] Create environment variable templates frontend/.env.example and backend/.env.example
-- [ ] T009 Setup Supabase project and copy connection details to .env files
-- [ ] T010 Initialize Opik project in Comet workspace and configure API keys
+- [x] T009 Setup Supabase project and copy connection details to .env files
+- [x] T010 Initialize Opik project in Comet workspace and configure API keys
 - [X] T011 Create Supabase database schema migrations in backend/app/db/migrations/001_init.sql (users, debts, repayment_plans, payments, actions, transactions, insights, milestones, reminders, negotiation_scripts tables)
 - [X] T012 Create database indexes migration in backend/app/db/migrations/002_indexes.sql (20+ indexes per data-model.md for <200ms query performance)
 - [X] T013 Create row-level security policies migration in backend/app/db/migrations/003_rls.sql (user data isolation)
@@ -49,27 +49,27 @@
 
 **Purpose**: Core authentication, base models, and shared services required by all user stories
 
-- [ ] T024 Create authentication router in backend/app/routers/auth.py (POST /auth/signup, POST /auth/login)
-- [ ] T025 Create user Pydantic models in backend/app/models/user.py (UserCreate, UserResponse, UserProfile)
-- [ ] T026 Create user repository in backend/app/db/repositories/user_repo.py (CRUD with encryption)
-- [ ] T027 Create JWT validation and security utilities in backend/app/core/security.py (password hashing, token generation)
-- [ ] T028 Create FastAPI auth dependency in backend/app/dependencies.py (get_current_user)
-- [ ] T029 Create Supabase service wrapper in backend/app/services/supabase_service.py (connection pool, CRUD helpers)
-- [ ] T030 [P] Create auth store in frontend/src/stores/authStore.ts (Zustand state for user session)
-- [ ] T031 [P] Create auth API service in frontend/src/services/api.ts (Axios wrapper with auth interceptor)
-- [ ] T032 [P] Create auth hook in frontend/src/hooks/useAuth.ts (signup, login, logout)
+- [X] T024 Create authentication router in backend/app/routers/auth.py (Google OAuth with Supabase)
+- [X] T025 Create user Pydantic models in backend/app/models/user.py (UserCreate, UserResponse, UserProfile)
+- [X] T026 Create user repository in backend/app/db/repositories/user_repo.py (CRUD with encryption)
+- [X] T027 Create JWT validation and security utilities in backend/app/core/security.py (token validation, JWT helpers)
+- [X] T028 Create FastAPI auth dependency in backend/app/dependencies.py (get_current_user)
+- [X] T029 Create Supabase service wrapper in backend/app/services/supabase_service.py (connection pool, CRUD helpers)
+- [X] T030 [P] Create auth store in frontend/src/stores/authStore.ts (Zustand state for user session)
+- [X] T031 [P] Create auth API service in frontend/src/services/api.ts (Axios wrapper with auth interceptor)
+- [X] T032 [P] Create auth hook in frontend/src/hooks/useAuth.ts (Google OAuth, logout)
 - [ ] T033 [P] Create common UI components in frontend/src/components/common/ (Button, Input, Card, Modal, Toast)
 - [ ] T034 [P] Create layout components in frontend/src/components/layout/ (AppShell, Nav, Sidebar, MobileMenu)
-- [ ] T035 [P] Create TypeScript types in frontend/src/types/ (debt.ts, plan.ts, user.ts, api.ts)
-- [ ] T036 [P] Create validation schemas in frontend/src/utils/validation.ts (Zod schemas for forms)
-- [ ] T037 [P] Create formatting utilities in frontend/src/utils/formatting.ts (currency, date, percentage formatters)
-- [ ] T038 [P] Create constants file in frontend/src/utils/constants.ts (API URLs, debt types, repayment strategies)
-- [ ] T039 Create BaseAgent class in backend/app/agents/base_agent.py with Opik tracing decorator
-- [ ] T040 Create custom error classes in backend/app/core/errors.py (UserError, SystemError, ExternalError)
-- [ ] T041 Create input validators in backend/app/core/validators.py (balance >0, APR 0-50%, etc.)
-- [ ] T042 Create health check router in backend/app/routers/health.py (GET /health, GET /readiness)
-- [ ] T043 Create Home/Landing page in frontend/src/pages/Home.tsx (signup/login forms)
-- [ ] T044 Create App root component with routing in frontend/src/App.tsx (React Router v6 setup)
+- [X] T035 [P] Create TypeScript types in frontend/src/types/ (user.ts, api.ts)
+- [X] T036 [P] Create validation schemas in frontend/src/utils/validation.ts (Zod schemas for forms)
+- [X] T037 [P] Create formatting utilities in frontend/src/utils/formatting.ts (currency, date, percentage formatters)
+- [X] T038 [P] Create constants file in frontend/src/utils/constants.ts (API URLs, debt types, repayment strategies)
+- [X] T039 Create BaseAgent class in backend/app/agents/base_agent.py with Opik tracing decorator
+- [X] T040 Create custom error classes in backend/app/core/errors.py (UserError, SystemError, ExternalError)
+- [X] T041 Create input validators in backend/app/core/validators.py (balance >0, APR 0-50%, etc.)
+- [X] T042 Create health check router in backend/app/routers/health.py (GET /health, GET /readiness)
+- [X] T043 Create Home/Landing page in frontend/src/pages/Home.tsx (Google OAuth login button)
+- [X] T044 Create App root component with routing in frontend/src/App.tsx (React Router v6 setup)
 
 ---
 

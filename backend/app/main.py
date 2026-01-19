@@ -1,9 +1,11 @@
 """
 FastAPI application entry point for ResolveAI
 """
-from fastapi import FastAPI
+from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from app.config import settings
+from app.core.errors import AppError
 
 # Create FastAPI app
 app = FastAPI(
@@ -15,16 +17,53 @@ app = FastAPI(
 )
 
 # Configure CORS
+cors_origins = settings.CORS_ORIGINS.split(",")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.cors_origins_list,
+    allow_origins=cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
+
+# Global exception handler for AppError
+@app.exception_handler(AppError)
+async def app_error_handler(request: Request, exc: AppError) -> JSONResponse:
+    """Handle custom AppError exceptions."""
+    return JSONResponse(
+        status_code=exc.status_code,
+        content=exc.to_dict()
+    )
+
+
+# Global exception handler for unexpected errors
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception) -> JSONResponse:
+    """Handle unexpected exceptions."""
+    if settings.DEBUG:
+        # In debug mode, show full error
+        return JSONResponse(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            content={
+                "error": "INTERNAL_SERVER_ERROR",
+                "message": str(exc),
+                "type": type(exc).__name__
+            }
+        )
+    else:
+        # In production, hide error details
+        return JSONResponse(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            content={
+                "error": "INTERNAL_SERVER_ERROR",
+                "message": "An unexpected error occurred"
+            }
+        )
+
+
 @app.get("/")
-async def root():
+async def root() -> dict[str, str]:
     """Root endpoint"""
     return {
         "message": "ResolveAI Debt Freedom Coach API",
@@ -32,14 +71,15 @@ async def root():
         "status": "operational"
     }
 
-@app.get("/health")
-async def health():
-    """Health check endpoint"""
-    return {"status": "healthy"}
 
-# Import and register routers (will be added in Phase 2)
-# from app.routers import auth, debts, plans, payments
-# app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
-# app.include_router(debts.router, prefix="/api/debts", tags=["debts"])
-# app.include_router(plans.router, prefix="/api/plans", tags=["plans"])
-# app.include_router(payments.router, prefix="/api/payments", tags=["payments"])
+# Import and register routers
+from app.routers import auth, health
+
+app.include_router(auth.router, prefix="/api")
+app.include_router(health.router, prefix="/api")
+
+# Additional routers will be added in later phases
+# from app.routers import debts, plans, payments
+# app.include_router(debts.router, prefix="/api")
+# app.include_router(plans.router, prefix="/api")
+# app.include_router(payments.router, prefix="/api")
