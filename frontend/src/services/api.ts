@@ -21,23 +21,31 @@ api.interceptors.request.use(
   async (config) => {
     try {
       // First try to get token from localStorage directly to avoid Supabase lock issues
-      const storageKey = 'sb-lzruskvkrefnfljhdlfp-auth-token';
-      const sessionStr = localStorage.getItem(storageKey);
+      // Check both possible storage keys
+      const possibleKeys = [
+        'resolveai-auth',                          // Our custom key
+        'sb-lzruskvkrefnfljhdlfp-auth-token'       // Supabase default key
+      ];
       
-      if (sessionStr) {
-        try {
-          const session = JSON.parse(sessionStr);
-          if (session?.access_token) {
-            config.headers.Authorization = `Bearer ${session.access_token}`;
-            console.log('[API] Using token from localStorage for:', config.url);
-            return config;
+      for (const storageKey of possibleKeys) {
+        const sessionStr = localStorage.getItem(storageKey);
+        
+        if (sessionStr) {
+          try {
+            const session = JSON.parse(sessionStr);
+            if (session?.access_token) {
+              config.headers.Authorization = `Bearer ${session.access_token}`;
+              console.log('[API] Using token from localStorage (', storageKey, ') for:', config.url);
+              return config;
+            }
+          } catch (parseErr) {
+            console.warn('[API] Failed to parse session from', storageKey);
           }
-        } catch (parseErr) {
-          console.warn('[API] Failed to parse session from localStorage');
         }
       }
       
       // Fallback to Supabase getSession if localStorage doesn't have it
+      console.log('[API] No token in localStorage, trying Supabase getSession...');
       const { data, error } = await supabase.auth.getSession();
 
       if (error) {

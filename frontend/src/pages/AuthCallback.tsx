@@ -84,11 +84,16 @@ export default function AuthCallback() {
         window.history.replaceState(null, '', window.location.pathname);
 
         // Wait a bit for storage to sync
-        await new Promise(resolve => setTimeout(resolve, 200));
+        await new Promise(resolve => setTimeout(resolve, 100));
 
         // Fetch user profile using the access token directly
-        console.log('[AuthCallback] Fetching user profile...');
-        const response = await api.get<User>('/auth/me');
+        // Manually inject the token to bypass any interceptor race conditions
+        console.log('[AuthCallback] Fetching user profile with token:', hashParams.access_token.substring(0, 20) + '...');
+        const response = await api.get<User>('/auth/me', {
+          headers: {
+            Authorization: `Bearer ${hashParams.access_token}`
+          }
+        });
 
         if (!response.data) {
           throw new Error('Failed to load user profile');

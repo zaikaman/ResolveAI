@@ -29,6 +29,15 @@ class SupabaseService:
                 settings.SUPABASE_KEY
             )
         return cls._instance
+
+    @classmethod
+    def _apply_auth_token(cls, client: Client, token: Optional[str]) -> Client:
+        if not token:
+            return client
+        postgrest = getattr(client, "postgrest", None)
+        if postgrest and hasattr(postgrest, "auth"):
+            postgrest.auth(token)
+        return client
     
     @classmethod
     async def select(
@@ -37,7 +46,8 @@ class SupabaseService:
         columns: str = "*",
         filters: Optional[Dict[str, Any]] = None,
         order_by: Optional[str] = None,
-        limit: Optional[int] = None
+        limit: Optional[int] = None,
+        token: Optional[str] = None
     ) -> List[Dict[str, Any]]:
         """
         Select rows from a table with optional filters.
@@ -56,7 +66,7 @@ class SupabaseService:
             SupabaseError: If query fails
         """
         try:
-            client = cls.get_client()
+            client = cls._apply_auth_token(cls.get_client(), token)
             query = client.table(table).select(columns)
             
             if filters:
@@ -82,7 +92,8 @@ class SupabaseService:
     async def insert(
         cls,
         table: str,
-        data: Dict[str, Any]
+        data: Dict[str, Any],
+        token: Optional[str] = None
     ) -> Dict[str, Any]:
         """
         Insert a row into a table.
@@ -98,7 +109,7 @@ class SupabaseService:
             SupabaseError: If insert fails
         """
         try:
-            client = cls.get_client()
+            client = cls._apply_auth_token(cls.get_client(), token)
             response = client.table(table).insert(data).execute()
             
             if not response.data:
@@ -120,7 +131,8 @@ class SupabaseService:
         cls,
         table: str,
         filters: Dict[str, Any],
-        data: Dict[str, Any]
+        data: Dict[str, Any],
+        token: Optional[str] = None
     ) -> List[Dict[str, Any]]:
         """
         Update rows in a table.
@@ -137,7 +149,7 @@ class SupabaseService:
             SupabaseError: If update fails
         """
         try:
-            client = cls.get_client()
+            client = cls._apply_auth_token(cls.get_client(), token)
             query = client.table(table).update(data)
             
             for column, value in filters.items():
@@ -156,7 +168,8 @@ class SupabaseService:
     async def delete(
         cls,
         table: str,
-        filters: Dict[str, Any]
+        filters: Dict[str, Any],
+        token: Optional[str] = None
     ) -> List[Dict[str, Any]]:
         """
         Delete rows from a table.
@@ -172,7 +185,7 @@ class SupabaseService:
             SupabaseError: If delete fails
         """
         try:
-            client = cls.get_client()
+            client = cls._apply_auth_token(cls.get_client(), token)
             query = client.table(table).delete()
             
             for column, value in filters.items():
