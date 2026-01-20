@@ -19,6 +19,7 @@ import { AppShell } from './components/layout/AppShell';
 // Lazy load protected pages
 import Debts from './pages/Debts';
 import Plan from './pages/Plan';
+import Progress from './pages/Progress';
 
 // Protected route wrapper
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -160,6 +161,7 @@ function App() {
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/debts" element={<Debts />} />
           <Route path="/plan" element={<Plan />} />
+          <Route path="/progress" element={<Progress />} />
           {/* Additional routes will be added here */}
           <Route path="/insights" element={<div className="p-6"><h1 className="text-2xl font-bold">Insights</h1><p className="text-slate-500">Coming soon...</p></div>} />
           <Route path="/negotiate" element={<div className="p-6"><h1 className="text-2xl font-bold">Negotiate</h1><p className="text-slate-500">Coming soon...</p></div>} />

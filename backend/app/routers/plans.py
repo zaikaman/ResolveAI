@@ -17,6 +17,9 @@ from app.services.encryption_service import encryption_service
 from app.dependencies import get_current_user
 from app.models.user import UserResponse
 from app.db.repositories.user_repo import UserRepository
+from app.db.repositories.debt_repo import DebtRepository
+from app.db.repositories.payment_repo import PaymentRepository
+from app.agents.action_agent import action_agent, DailyActionsResponse
 from app.core.errors import NotFoundError, ValidationError
 
 security = HTTPBearer()
@@ -239,3 +242,48 @@ async def complete_plan(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Plan {plan_id} not found"
         )
+
+
+@router.get("/actions/daily", response_model=DailyActionsResponse)
+async def get_daily_actions(
+    current_user: UserResponse = Depends(get_current_user),
+    credentials: HTTPAuthorizationCredentials = Depends(security)
+) -> DailyActionsResponse:
+    """
+    Get recommended daily actions based on the user's plan.
+    
+    Returns personalized actions including:
+    - Scheduled payments for this month
+    - Review reminders
+    - Milestone celebrations
+    
+    Args:
+        current_user: Authenticated user
+    
+    Returns:
+        DailyActionsResponse with prioritized actions
+    """
+    token = credentials.credentials
+    
+    # Get active plan
+    active_plan = await PlanService.get_active_plan(current_user.id)
+    
+    # Get active debts
+    debts_response = await DebtRepository.get_all_by_user(current_user.id)
+    debts = debts_response.debts
+    
+    # Get payment stats for streak info
+    payment_stats = await PaymentRepository.get_stats(current_user.id, token=token)
+    
+    # Get last payment date
+    recent_payments = await PaymentRepository.get_recent(current_user.id, days=30, limit=1, token=token)
+    last_payment_date = recent_payments[0].payment_date if recent_payments else None
+    
+    # Generate daily actions
+    return await action_agent.generate_daily_actions(
+        plan=active_plan,
+        debts=debts,
+        current_streak=payment_stats.current_streak_days,
+        last_payment_date=last_payment_date,
+        payments_this_month=payment_stats.payments_this_month
+    )

@@ -16,9 +16,10 @@ class OpenAIClient:
     def get_client(cls) -> AsyncOpenAI:
         """Get or create OpenAI client instance"""
         if cls._instance is None:
-            cls._instance = AsyncOpenAI(
-                api_key=settings.OPENAI_API_KEY,
-            )
+            client_kwargs = {"api_key": settings.OPENAI_API_KEY}
+            if settings.OPENAI_BASE_URL:
+                client_kwargs["base_url"] = settings.OPENAI_BASE_URL
+            cls._instance = AsyncOpenAI(**client_kwargs)
         return cls._instance
     
     @classmethod
@@ -26,8 +27,6 @@ class OpenAIClient:
         cls,
         messages: list[dict[str, str]],
         model: str | None = None,
-        temperature: float = 0.7,
-        max_tokens: int | None = None,
     ) -> str:
         """Execute a chat completion and return response text"""
         client = cls.get_client()
@@ -35,12 +34,13 @@ class OpenAIClient:
         # Cast messages to the expected type
         typed_messages = cast(list[ChatCompletionMessageParam], messages)
         
-        response = await client.chat.completions.create(
-            model=model or settings.OPENAI_MODEL,
-            messages=typed_messages,
-            temperature=temperature,
-            max_tokens=max_tokens,
-        )
+        # Build API parameters, only include max_tokens if it's not None
+        api_params = {
+            "model": model or settings.OPENAI_MODEL,
+            "messages": typed_messages,
+        }
+        
+        response = await client.chat.completions.create(**api_params)
         
         return response.choices[0].message.content or ""
     
@@ -74,3 +74,7 @@ class OpenAIClient:
 async def get_openai_client() -> AsyncOpenAI:
     """Get OpenAI client instance"""
     return OpenAIClient.get_client()
+
+
+# Export singleton instance for direct usage
+openai_client = OpenAIClient()

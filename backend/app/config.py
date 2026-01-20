@@ -21,6 +21,7 @@ class Settings(BaseSettings):
     
     # OpenAI
     OPENAI_API_KEY: str = ""
+    OPENAI_BASE_URL: str = ""
     OPENAI_MODEL: str = "gpt-5-nano"
     
     # Opik (Comet ML)

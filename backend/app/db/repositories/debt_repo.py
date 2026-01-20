@@ -296,3 +296,45 @@ class DebtRepository:
             filters={"user_id": user_id}
         )
         return len(results)
+    
+    @staticmethod
+    async def update_balance(
+        debt_id: str,
+        user_id: str,
+        new_balance: float,
+        is_paid_off: bool = False,
+        token: Optional[str] = None
+    ) -> Optional[DebtResponse]:
+        """
+        Update a debt's balance (typically after a payment).
+        
+        Args:
+            debt_id: Debt UUID
+            user_id: User UUID
+            new_balance: New balance after payment
+            is_paid_off: Whether debt is fully paid off
+            token: Optional JWT token
+        
+        Returns:
+            Updated debt or None
+        """
+        db_data = {
+            "current_balance_encrypted": encryption_service.encrypt_server_only(str(new_balance)),
+            "updated_at": datetime.utcnow().isoformat()
+        }
+        
+        if is_paid_off:
+            db_data["is_paid_off"] = True
+            db_data["paid_off_at"] = datetime.utcnow().isoformat()
+        
+        results = await SupabaseService.update(
+            DebtRepository.TABLE,
+            filters={"id": debt_id, "user_id": user_id},
+            data=db_data,
+            token=token
+        )
+        
+        if not results:
+            return None
+        
+        return DebtRepository._decrypt_debt(results[0])

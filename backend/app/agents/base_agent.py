@@ -89,13 +89,33 @@ class BaseAgent:
             # Log error (just to console since we don't have a separate log_error method)
             print(f"Agent {self.agent_name} error: {e}\n{error_trace}")
             
+            # Serialize kwargs for JSON output - convert Pydantic models to dicts
+            serializable_input = {}
+            for key, value in kwargs.items():
+                if hasattr(value, 'model_dump'):
+                    # Pydantic v2 model
+                    serializable_input[key] = value.model_dump(mode='json')
+                elif hasattr(value, 'dict'):
+                    # Pydantic v1 model
+                    serializable_input[key] = value.dict()
+                elif isinstance(value, list):
+                    # List of potential Pydantic models
+                    serializable_input[key] = [
+                        item.model_dump(mode='json') if hasattr(item, 'model_dump') 
+                        else item.dict() if hasattr(item, 'dict')
+                        else item
+                        for item in value
+                    ]
+                else:
+                    serializable_input[key] = value
+            
             raise SystemError(
                 message=f"{self.agent_name} execution failed",
                 error_code="AGENT_EXECUTION_ERROR",
                 details={
                     "agent": self.agent_name,
                     "error": str(e),
-                    "input": kwargs
+                    "input": serializable_input
                 }
             )
     

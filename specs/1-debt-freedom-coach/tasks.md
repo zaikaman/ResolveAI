@@ -146,36 +146,36 @@
 
 ### Backend - Data Layer
 
-- [ ] T079 [P] [US2] Create payment Pydantic models in backend/app/models/payment.py (PaymentCreate, PaymentResponse, PaymentStats)
-- [ ] T080 [US2] Create payment repository in backend/app/db/repositories/payment_repo.py (log payment, get recent payments, calculate stats)
+- [x] T079 [P] [US2] Create payment Pydantic models in backend/app/models/payment.py (PaymentCreate, PaymentResponse, PaymentStats)
+- [x] T080 [US2] Create payment repository in backend/app/db/repositories/payment_repo.py (log payment, get recent payments, calculate stats)
 
 ### Backend - Business Logic
 
-- [ ] T081 [US2] Create ActionAgent in backend/app/agents/action_agent.py (generate daily actions based on payment schedule, personalize messages)
-- [ ] T082 [US2] Create HabitAgent in backend/app/agents/habit_agent.py (detect milestones, generate celebrations, suggest nudges)
-- [ ] T083 [US2] Create payment service in backend/app/services/payment_service.py (log payment, update debt balance, trigger plan recalculation, calculate interest saved)
+- [x] T081 [US2] Create ActionAgent in backend/app/agents/action_agent.py (generate daily actions based on payment schedule, personalize messages)
+- [x] T082 [US2] Create HabitAgent in backend/app/agents/habit_agent.py (detect milestones, generate celebrations, suggest nudges)
+- [x] T083 [US2] Create payment service in backend/app/services/payment_service.py (log payment, update debt balance, trigger plan recalculation, calculate interest saved)
 
 ### Backend - API Layer
 
-- [ ] T084 [US2] Create payments router in backend/app/routers/payments.py (POST /payments, GET /payments, GET /payments/stats)
-- [ ] T085 [US2] Create actions endpoint in backend/app/routers/plans.py (GET /plans/actions/daily)
+- [x] T084 [US2] Create payments router in backend/app/routers/payments.py (POST /payments, GET /payments, GET /payments/stats)
+- [x] T085 [US2] Create actions endpoint in backend/app/routers/plans.py (GET /plans/actions/daily)
 
 ### Frontend - State & Services
 
-- [ ] T086 [US2] Create payment API service in frontend/src/services/paymentService.ts (log payment, get payment history)
+- [x] T086 [US2] Create payment API service in frontend/src/services/paymentService.ts (log payment, get payment history)
 
 ### Frontend - UI Components
 
-- [ ] T087 [P] [US2] Create DailyActions component in frontend/src/components/progress/DailyActions.tsx (prioritized action list with "Pay $X" buttons)
-- [ ] T088 [P] [US2] Create PaymentLogger component in frontend/src/components/progress/PaymentLogger.tsx (quick payment entry modal with amount, date)
-- [ ] T089 [P] [US2] Create ProgressDashboard component in frontend/src/components/progress/ProgressDashboard.tsx (metrics: total debt reduced, % complete, days to milestone)
-- [ ] T090 [P] [US2] Create ProgressChart component in frontend/src/components/progress/ProgressChart.tsx (Recharts bar chart showing debt reduction over time)
-- [ ] T091 [P] [US2] Create MilestoneCard component in frontend/src/components/progress/MilestoneCard.tsx (celebration animation, badge, progress message)
+- [x] T087 [P] [US2] Create DailyActions component in frontend/src/components/progress/DailyActions.tsx (prioritized action list with "Pay $X" buttons)
+- [x] T088 [P] [US2] Create PaymentLogger component in frontend/src/components/progress/PaymentLogger.tsx (quick payment entry modal with amount, date)
+- [x] T089 [P] [US2] Create ProgressDashboard component in frontend/src/components/progress/ProgressDashboard.tsx (metrics: total debt reduced, % complete, days to milestone)
+- [x] T090 [P] [US2] Create ProgressChart component in frontend/src/components/progress/ProgressChart.tsx (Recharts bar chart showing debt reduction over time)
+- [x] T091 [P] [US2] Create MilestoneCard component in frontend/src/components/progress/MilestoneCard.tsx (celebration animation, badge, progress message)
 
 ### Frontend - Pages & Integration
 
-- [ ] T092 [US2] Create Dashboard page in frontend/src/pages/Dashboard.tsx (daily actions + progress overview)
-- [ ] T093 [US2] Test payment logging flow: log $200 payment → verify debt balance updates <500ms → see updated projections → check milestone detection
+- [x] T092 [US2] Create Dashboard page in frontend/src/pages/Dashboard.tsx (daily actions + progress overview)
+- [x] T093 [US2] Test payment logging flow: log $200 payment → verify debt balance updates <500ms → see updated projections → check milestone detection
 
 ---
 

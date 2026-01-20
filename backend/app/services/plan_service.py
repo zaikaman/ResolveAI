@@ -7,6 +7,7 @@ from typing import Optional, List
 from app.db.repositories.plan_repo import PlanRepository
 from app.db.repositories.debt_repo import DebtRepository
 from app.services.optimization_service import OptimizationService, DebtInfo
+from app.agents.optimization_agent import optimization_agent
 from app.models.plan import (
     PlanRequest,
     PlanResponse,
@@ -67,13 +68,20 @@ class PlanService:
         # Use custom budget if provided, otherwise use user's available amount
         monthly_budget = request.custom_monthly_budget or available_for_debt
         
-        # Calculate optimized plan
-        result = OptimizationService.calculate_plan(
-            debts=debt_infos,
-            available_monthly=monthly_budget,
-            strategy=request.strategy,
-            extra_payment=request.extra_monthly_payment,
-            start_date=request.start_date
+        # Use AI-powered optimization agent
+        result = await optimization_agent.optimize_repayment_plan(
+            user_id=user_id,
+            debts=debts,
+            monthly_budget=monthly_budget,
+            strategy=request.strategy.value if hasattr(request.strategy, 'value') else str(request.strategy),
+            constraints={
+                "extra_payment": request.extra_monthly_payment,
+                "start_date": request.start_date
+            },
+            user_context={
+                "available_for_debt": available_for_debt,
+                "payment_history": "new_user"  # Could be enhanced with actual history
+            }
         )
         
         # Calculate minimum-only comparison

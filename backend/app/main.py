@@ -87,11 +87,12 @@ async def root() -> dict[str, str]:
 
 
 # Import and register routers
-from app.routers import auth, health, debts, plans, uploads
+from app.routers import auth, health, debts, plans, uploads, payments
 
 app.include_router(auth.router, prefix="/api")
 app.include_router(health.router, prefix="/api")
 app.include_router(debts.router, prefix="/api")
 app.include_router(plans.router, prefix="/api")
 app.include_router(uploads.router, prefix="/api")
+app.include_router(payments.router, prefix="/api")
 
