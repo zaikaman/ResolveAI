@@ -22,7 +22,7 @@ class Settings(BaseSettings):
     # OpenAI
     OPENAI_API_KEY: str = ""
     OPENAI_BASE_URL: str = ""
-    OPENAI_MODEL: str = "gpt-5-nano"
+    OPENAI_MODEL: str = "gemini-2.5-flash-lite-nothinking"
     
     # Opik (Comet ML)
     OPIK_API_KEY: str = ""

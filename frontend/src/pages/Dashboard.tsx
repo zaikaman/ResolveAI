@@ -41,10 +41,23 @@ export default function Dashboard() {
     const [suggestedAmount, setSuggestedAmount] = useState<number | undefined>();
     const [celebrationMilestones, setCelebrationMilestones] = useState<MilestoneCheckResult | null>(null);
     const [showCelebration, setShowCelebration] = useState(false);
+    const [lastFetchTime, setLastFetchTime] = useState<number>(0);
 
     // Fetch all dashboard data
-    const fetchDashboardData = useCallback(async () => {
-        setLoading(true);
+    const fetchDashboardData = useCallback(async (forceRefresh = false) => {
+        // Only show loading spinner if we don't have data yet
+        const hasData = dailyActions !== null || paymentStats !== null;
+        
+        // Don't refetch if data is fresh (less than 30 seconds old) unless forced
+        const now = Date.now();
+        const isFresh = !forceRefresh && hasData && (now - lastFetchTime < 30000);
+        if (isFresh) {
+            return;
+        }
+        
+        if (!hasData || forceRefresh) {
+            setLoading(true);
+        }
         try {
             // Fetch in parallel
             const [
@@ -63,6 +76,7 @@ export default function Dashboard() {
             setPaymentStats(statsData);
             setPaymentSummary(summaryData);
             setRecentPayments(paymentsData);
+            setLastFetchTime(Date.now());
 
             // Also fetch debts and plan if not already loaded
             await Promise.all([
@@ -74,11 +88,27 @@ export default function Dashboard() {
         } finally {
             setLoading(false);
         }
-    }, [fetchDebts, fetchPlanSummary]);
+    }, [fetchDebts, fetchPlanSummary, dailyActions, paymentStats, lastFetchTime]);
 
     useEffect(() => {
         fetchDashboardData();
-    }, [fetchDashboardData]);
+    }, []);
+
+    // Handle visibility change - only refresh if user was away for a long time
+    useEffect(() => {
+        const handleVisibilityChange = () => {
+            if (!document.hidden) {
+                // Only refresh if data is stale (> 5 minutes)
+                const now = Date.now();
+                if (now - lastFetchTime > 300000) {
+                    fetchDashboardData(true);
+                }
+            }
+        };
+
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+        return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+    }, [lastFetchTime]);
 
     // Handle payment action from daily actions
     const handlePayAction = (action: DailyAction) => {
@@ -107,7 +137,7 @@ export default function Dashboard() {
         }
 
         // Refresh dashboard data
-        await fetchDashboardData();
+        await fetchDashboardData(true);
     };
 
     // Calculate total debt
@@ -132,7 +162,7 @@ export default function Dashboard() {
                 <div className="flex gap-3">
                     <Button 
                         variant="secondary"
-                        onClick={() => fetchDashboardData()}
+                        onClick={() => fetchDashboardData(true)}
                         leftIcon={<RefreshCw className="h-4 w-4" />}
                     >
                         Refresh

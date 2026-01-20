@@ -57,6 +57,7 @@ export interface Plan {
     monthly_schedule: MonthlyBreakdown[];
     projections: PlanProjection[];
     payoff_order: DebtPayoffInfo[];
+    ai_explanation?: string;
     created_at: string;
     updated_at: string;
 }
@@ -112,7 +113,7 @@ const initialState = {
     error: null,
 };
 
-export const usePlanStore = create<PlanState>((set) => ({
+export const usePlanStore = create<PlanState>((set, get) => ({
     ...initialState,
 
     setActivePlan: (plan) => set({ activePlan: plan, error: null }),
@@ -123,9 +124,18 @@ export const usePlanStore = create<PlanState>((set) => ({
 
     setLoading: (loading) => set({ loading }),
 
-    setGenerating: (generating) => set({ generating }),
+    setGenerating: (generating) => {
+        console.log('[planStore] setGenerating called with:', generating);
+        console.trace('[planStore] setGenerating stack trace');
+        set({ generating });
+        console.log('[planStore] After set, generating is now:', get().generating);
+    },
 
-    setError: (error) => set({ error, loading: false, generating: false }),
+    setError: (error) => {
+        console.log('[planStore] setError called with:', error);
+        set({ error, loading: false });
+        // Don't reset generating here - let the caller control it
+    },
 
     reset: () => set(initialState),
 }));

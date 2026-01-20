@@ -3,6 +3,7 @@
  */
 
 import { useCallback } from 'react';
+import { flushSync } from 'react-dom';
 import { usePlanStore } from '../stores/planStore';
 import planService from '../services/planService';
 import type { PlanRequest, SimulationRequest } from '../services/planService';
@@ -34,7 +35,7 @@ export function usePlan() {
             return plan;
         } catch (err: any) {
             if (err.response?.status === 404) {
-                // No active plan is not an error
+                // No active plan is not an error - don't call setError
                 setActivePlan(null);
                 return null;
             }
@@ -66,16 +67,24 @@ export function usePlan() {
      * Generate a new plan
      */
     const generatePlan = useCallback(async (request: PlanRequest = {}) => {
-        setGenerating(true);
-        setError(null);
+        console.log('[usePlan] Setting generating to true');
+        flushSync(() => {
+            setGenerating(true);
+            setError(null);
+        });
+        console.log('[usePlan] After flushSync, should be true now');
         try {
+            console.log('[usePlan] Calling planService.generatePlan');
             const plan = await planService.generatePlan(request);
+            console.log('[usePlan] Plan generated successfully');
             setActivePlan(plan);
             return plan;
         } catch (err: any) {
+            console.log('[usePlan] Error generating plan:', err);
             setError(err.message || 'Failed to generate plan');
             throw err;
         } finally {
+            console.log('[usePlan] Setting generating to false');
             setGenerating(false);
         }
     }, [setActivePlan, setGenerating, setError]);

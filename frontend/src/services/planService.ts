@@ -3,6 +3,8 @@
  */
 
 import api from './api';
+import { createAndPollJob } from './jobPolling';
+import type { JobPollOptions } from './jobPolling';
 import type { Plan, PlanSummary, SimulationResult } from '../stores/planStore';
 
 export interface PlanRequest {
@@ -47,27 +49,42 @@ class PlanService {
     }
 
     /**
-     * Generate a new repayment plan
+     * Generate a new repayment plan (async with polling)
      */
-    async generatePlan(request: PlanRequest = {}): Promise<Plan> {
-        const response = await api.post<Plan>('/plans/generate', request);
-        return response.data;
+    async generatePlan(
+        request: PlanRequest = {},
+        options?: JobPollOptions
+    ): Promise<Plan> {
+        return createAndPollJob<Plan>(
+            () => api.post('/plans/generate', request),
+            options
+        );
     }
 
     /**
-     * Recalculate an existing plan with new parameters
+     * Recalculate an existing plan with new parameters (async with polling)
      */
-    async recalculatePlan(request: RecalculationRequest): Promise<Plan> {
-        const response = await api.post<Plan>('/plans/recalculate', request);
-        return response.data;
+    async recalculatePlan(
+        request: RecalculationRequest,
+        options?: JobPollOptions
+    ): Promise<Plan> {
+        return createAndPollJob<Plan>(
+            () => api.post('/plans/recalculate', request),
+            options
+        );
     }
 
     /**
-     * Simulate a what-if scenario without saving
+     * Simulate a what-if scenario without saving (async with polling)
      */
-    async simulate(request: SimulationRequest): Promise<SimulationResult> {
-        const response = await api.post<SimulationResult>('/plans/simulate', request);
-        return response.data;
+    async simulate(
+        request: SimulationRequest,
+        options?: JobPollOptions
+    ): Promise<SimulationResult> {
+        return createAndPollJob<SimulationResult>(
+            () => api.post('/plans/simulate', request),
+            options
+        );
     }
 
     /**
@@ -76,6 +93,16 @@ class PlanService {
     async completePlan(planId: string): Promise<Plan> {
         const response = await api.post<Plan>(`/plans/${planId}/complete`);
         return response.data;
+    }
+
+    /**
+     * Get daily actions (async with polling)
+     */
+    async getDailyActions(options?: JobPollOptions): Promise<any> {
+        return createAndPollJob(
+            () => api.get('/plans/actions/daily'),
+            options
+        );
     }
 }
 

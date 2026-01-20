@@ -38,6 +38,7 @@ class PlanRepository:
         monthly_schedule: List[MonthlyBreakdown],
         projections: List[PlanProjection],
         payoff_order: List[DebtPayoffInfo],
+        ai_explanation: Optional[str] = None,
         token: Optional[str] = None
     ) -> PlanResponse:
         """
@@ -82,7 +83,8 @@ class PlanRepository:
                 "total_months": total_months,
                 "extra_payment": extra_payment,
                 "projections": projections_json,
-                "payoff_order": payoff_json
+                "payoff_order": payoff_json,
+                "ai_explanation": ai_explanation
             }),
             "created_at": datetime.utcnow().isoformat(),
             "updated_at": datetime.utcnow().isoformat()
@@ -341,6 +343,7 @@ class PlanRepository:
             monthly_schedule=monthly_schedule,
             projections=projections,
             payoff_order=payoff_order,
+            ai_explanation=metadata.get("ai_explanation"),
             created_at=row["created_at"],
             updated_at=row["updated_at"]
         )

@@ -16,6 +16,12 @@ async def lifespan(app: FastAPI):
     # Startup: Initialize Supabase async client
     await init_supabase()
     print("[LifeSpan] Supabase async client initialized")
+    
+    # Register job handlers
+    from app.services.job_handlers import register_all_handlers
+    register_all_handlers()
+    print("[LifeSpan] Job handlers registered")
+    
     yield
     # Shutdown logic if any (e.g. close client)
     print("[LifeSpan] Shutdown")
@@ -87,7 +93,7 @@ async def root() -> dict[str, str]:
 
 
 # Import and register routers
-from app.routers import auth, health, debts, plans, uploads, payments
+from app.routers import auth, health, debts, plans, uploads, payments, jobs
 
 app.include_router(auth.router, prefix="/api")
 app.include_router(health.router, prefix="/api")
@@ -95,4 +101,5 @@ app.include_router(debts.router, prefix="/api")
 app.include_router(plans.router, prefix="/api")
 app.include_router(uploads.router, prefix="/api")
 app.include_router(payments.router, prefix="/api")
+app.include_router(jobs.router, prefix="/api")
 

@@ -10,11 +10,14 @@ from app.models.upload import (
     UploadStatus,
     OCRResult
 )
+from app.models.job import JobResponse, JobType
 from app.services.ocr_service import OCRService
+from app.services.job_service import job_service
 from app.dependencies import get_current_user
 from app.models.user import UserResponse
 from datetime import datetime
 import uuid
+import base64
 
 router = APIRouter(prefix="/uploads", tags=["uploads"])
 
@@ -22,14 +25,17 @@ router = APIRouter(prefix="/uploads", tags=["uploads"])
 _upload_cache: dict[str, dict] = {}
 
 
-@router.post("/document", response_model=UploadResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/document", response_model=JobResponse, status_code=status.HTTP_202_ACCEPTED)
 async def upload_document(
     file: UploadFile = File(...),
     document_type: DocumentType = Form(DocumentType.OTHER),
     current_user: UserResponse = Depends(get_current_user)
-) -> UploadResponse:
+) -> JobResponse:
     """
-    Upload a document for OCR processing.
+    Upload a document for OCR processing (async).
+    
+    Creates a background job to process the document. Poll the returned
+    job_id at /api/jobs/{job_id} to check status and get the extracted data.
     
     Supported formats: PNG, JPEG, WebP images.
     Maximum file size: 10MB.
@@ -40,7 +46,7 @@ async def upload_document(
         current_user: Authenticated user
     
     Returns:
-        Upload details with processing status
+        Job ID to poll for results
     
     Raises:
         400: If file validation fails
@@ -60,38 +66,20 @@ async def upload_document(
     # Generate upload ID
     upload_id = str(uuid.uuid4())
     
-    # Store upload info
-    upload_info = {
-        "id": upload_id,
-        "user_id": current_user.id,
-        "filename": file.filename or "document",
-        "document_type": document_type,
-        "status": UploadStatus.PROCESSING,
-        "created_at": datetime.utcnow(),
-        "content": content,
-        "content_type": content_type
-    }
-    _upload_cache[upload_id] = upload_info
-    
-    # Process immediately (in production, use background task)
-    try:
-        result = await OCRService.process_document(content, content_type, upload_id)
-        _upload_cache[upload_id]["result"] = result
-        _upload_cache[upload_id]["status"] = result.status
-    except Exception as e:
-        _upload_cache[upload_id]["status"] = UploadStatus.FAILED
-        _upload_cache[upload_id]["error"] = str(e)
-    
-    return UploadResponse(
-        id=upload_id,
+    # Create background job for OCR processing
+    job = await job_service.create_job(
         user_id=current_user.id,
-        filename=file.filename or "document",
-        document_type=document_type,
-        status=_upload_cache[upload_id]["status"],
-        created_at=upload_info["created_at"],
-        processing_started_at=upload_info["created_at"],
-        processing_completed_at=datetime.utcnow() if _upload_cache[upload_id]["status"] != UploadStatus.PROCESSING else None
+        job_type=JobType.OCR_PROCESSING,
+        input_data={
+            "file_content": base64.b64encode(content).decode('utf-8'),
+            "file_type": content_type,
+            "upload_id": upload_id,
+            "filename": file.filename or "document",
+            "document_type": document_type.value
+        }
     )
+    
+    return job
 
 
 @router.get("/{upload_id}/status", response_model=UploadStatusResponse)

@@ -154,7 +154,7 @@ export function DailyActions({
         );
     }
 
-    if (!actionsData || actionsData.actions.length === 0) {
+    if (!actionsData || !actionsData.actions || actionsData.actions.length === 0) {
         return (
             <Card>
                 <CardHeader>

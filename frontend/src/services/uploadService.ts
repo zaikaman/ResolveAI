@@ -3,6 +3,8 @@
  */
 
 import api from './api';
+import { createAndPollJob } from './jobPolling';
+import type { JobPollOptions } from './jobPolling';
 
 export interface ExtractedDebt {
     creditor_name: string;
@@ -47,23 +49,25 @@ export interface UploadStatusResponse {
 
 class UploadService {
     /**
-     * Upload a document for OCR processing
+     * Upload a document for OCR processing (async with polling)
      */
     async uploadDocument(
         file: File,
-        documentType: 'bank_statement' | 'credit_card_statement' | 'loan_statement' | 'other' = 'other'
-    ): Promise<UploadResponse> {
+        documentType: 'bank_statement' | 'credit_card_statement' | 'loan_statement' | 'other' = 'other',
+        options?: JobPollOptions
+    ): Promise<OCRResult> {
         const formData = new FormData();
         formData.append('file', file);
         formData.append('document_type', documentType);
 
-        const response = await api.post<UploadResponse>('/uploads/document', formData, {
-            headers: {
-                'Content-Type': 'multipart/form-data',
-            },
-        });
-
-        return response.data;
+        return createAndPollJob<OCRResult>(
+            () => api.post('/uploads/document', formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                },
+            }),
+            options
+        );
     }
 
     /**

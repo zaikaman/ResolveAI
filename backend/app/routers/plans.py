@@ -12,7 +12,9 @@ from app.models.plan import (
     PlanSimulationRequest,
     PlanSimulationResponse
 )
+from app.models.job import JobResponse, JobType
 from app.services.plan_service import PlanService
+from app.services.job_service import job_service
 from app.services.encryption_service import encryption_service
 from app.dependencies import get_current_user
 from app.models.user import UserResponse
@@ -21,6 +23,7 @@ from app.db.repositories.debt_repo import DebtRepository
 from app.db.repositories.payment_repo import PaymentRepository
 from app.agents.action_agent import action_agent, DailyActionsResponse
 from app.core.errors import NotFoundError, ValidationError
+from datetime import date
 
 security = HTTPBearer()
 
@@ -77,24 +80,24 @@ async def get_plan_summary(
     return summary
 
 
-@router.post("/generate", response_model=PlanResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/generate", response_model=JobResponse, status_code=status.HTTP_202_ACCEPTED)
 async def generate_plan(
     request: PlanRequest,
     current_user: UserResponse = Depends(get_current_user),
     credentials: HTTPAuthorizationCredentials = Depends(security)
-) -> PlanResponse:
+) -> JobResponse:
     """
-    Generate a new repayment plan.
+    Generate a new repayment plan (async).
     
-    This will archive any existing active plans and create a new one
-    based on the user's current debts and financial situation.
+    This creates a background job to generate the plan. Poll the returned
+    job_id at /api/jobs/{job_id} to check status and get the result.
     
     Args:
         request: Plan generation parameters
         current_user: Authenticated user
     
     Returns:
-        Generated plan
+        Job ID to poll for results
     
     Raises:
         400: If no debts to plan for or validation fails
@@ -118,7 +121,22 @@ async def generate_plan(
             available = float(encryption_service.decrypt_server_only(user_profile.available_for_debt_encrypted))
         
         token = credentials.credentials
-        return await PlanService.generate_plan(current_user.id, request, available, token=token)
+        
+        # Create background job
+        job = await job_service.create_job(
+            user_id=current_user.id,
+            job_type=JobType.PLAN_GENERATION,
+            input_data={
+                "strategy": request.strategy.value if hasattr(request.strategy, 'value') else str(request.strategy),
+                "extra_monthly_payment": request.extra_monthly_payment,
+                "start_date": request.start_date.isoformat() if request.start_date else date.today().isoformat(),
+                "custom_monthly_budget": request.custom_monthly_budget,
+                "available_for_debt": available,
+                "token": token
+            }
+        )
+        
+        return job
     except ValidationError as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -126,21 +144,24 @@ async def generate_plan(
         )
 
 
-@router.post("/recalculate", response_model=PlanResponse)
+@router.post("/recalculate", response_model=JobResponse, status_code=status.HTTP_202_ACCEPTED)
 async def recalculate_plan(
     request: PlanRecalculationRequest,
     current_user: UserResponse = Depends(get_current_user),
     credentials: HTTPAuthorizationCredentials = Depends(security)
-) -> PlanResponse:
+) -> JobResponse:
     """
-    Recalculate an existing plan with updated parameters.
+    Recalculate an existing plan with updated parameters (async).
+    
+    Creates a background job to recalculate the plan. Poll the returned
+    job_id at /api/jobs/{job_id} to check status and get the result.
     
     Args:
         request: Recalculation parameters
         current_user: Authenticated user
     
     Returns:
-        New recalculated plan
+        Job ID to poll for results
     
     Raises:
         404: If referenced plan not found
@@ -155,13 +176,20 @@ async def recalculate_plan(
             if user_profile and user_profile.available_for_debt_encrypted:
                 available = float(encryption_service.decrypt_server_only(user_profile.available_for_debt_encrypted))
         
-        return await PlanService.recalculate_plan(
+        # Create background job
+        job = await job_service.create_job(
             user_id=current_user.id,
-            plan_id=request.plan_id,
-            strategy=request.strategy,
-            extra_payment=request.extra_monthly_payment,
-            available_for_debt=available
+            job_type=JobType.PLAN_RECALCULATION,
+            input_data={
+                "plan_id": request.plan_id,
+                "strategy": request.strategy.value if request.strategy and hasattr(request.strategy, 'value') else None,
+                "extra_monthly_payment": request.extra_monthly_payment,
+                "available_for_debt": available,
+                "token": credentials.credentials
+            }
         )
+        
+        return job
     except NotFoundError:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -174,16 +202,16 @@ async def recalculate_plan(
         )
 
 
-@router.post("/simulate", response_model=PlanSimulationResponse)
+@router.post("/simulate", response_model=JobResponse, status_code=status.HTTP_202_ACCEPTED)
 async def simulate_scenario(
     request: PlanSimulationRequest,
     current_user: UserResponse = Depends(get_current_user),
     credentials: HTTPAuthorizationCredentials = Depends(security)
-) -> PlanSimulationResponse:
+) -> JobResponse:
     """
-    Simulate a what-if scenario without saving.
+    Simulate a what-if scenario without saving (async).
     
-    Useful for exploring different strategies or seeing the impact
+    Creates a background job to simulate different strategies or see the impact
     of income changes, lump sum payments, or rate reductions.
     
     Args:
@@ -191,7 +219,7 @@ async def simulate_scenario(
         current_user: Authenticated user
     
     Returns:
-        Simulation results with comparison to current plan
+        Job ID to poll for results
     
     Raises:
         400: If no active plan to compare against
@@ -209,7 +237,23 @@ async def simulate_scenario(
                 )
             available = float(encryption_service.decrypt_server_only(user_profile.available_for_debt_encrypted))
         
-        return await PlanService.simulate_scenario(current_user.id, request, available)
+        # Create background job
+        job = await job_service.create_job(
+            user_id=current_user.id,
+            job_type=JobType.PLAN_SIMULATION,
+            input_data={
+                "strategy": request.strategy.value if request.strategy and hasattr(request.strategy, 'value') else "avalanche",
+                "extra_monthly_payment": request.extra_monthly_payment,
+                "income_change": request.income_change,
+                "lump_sum_payment": request.lump_sum_payment,
+                "lump_sum_target_debt_id": request.lump_sum_target_debt_id,
+                "rate_reduction": request.rate_reduction,
+                "available_for_debt": available,
+                "token": credentials.credentials
+            }
+        )
+        
+        return job
     except ValidationError as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -244,46 +288,32 @@ async def complete_plan(
         )
 
 
-@router.get("/actions/daily", response_model=DailyActionsResponse)
+@router.get("/actions/daily", response_model=JobResponse, status_code=status.HTTP_202_ACCEPTED)
 async def get_daily_actions(
     current_user: UserResponse = Depends(get_current_user),
     credentials: HTTPAuthorizationCredentials = Depends(security)
-) -> DailyActionsResponse:
+) -> JobResponse:
     """
-    Get recommended daily actions based on the user's plan.
+    Get recommended daily actions based on the user's plan (async).
     
-    Returns personalized actions including:
-    - Scheduled payments for this month
-    - Review reminders
-    - Milestone celebrations
+    Creates a background job to generate personalized actions. Poll the returned
+    job_id at /api/jobs/{job_id} to check status and get the result.
     
     Args:
         current_user: Authenticated user
     
     Returns:
-        DailyActionsResponse with prioritized actions
+        Job ID to poll for results
     """
     token = credentials.credentials
     
-    # Get active plan
-    active_plan = await PlanService.get_active_plan(current_user.id)
-    
-    # Get active debts
-    debts_response = await DebtRepository.get_all_by_user(current_user.id)
-    debts = debts_response.debts
-    
-    # Get payment stats for streak info
-    payment_stats = await PaymentRepository.get_stats(current_user.id, token=token)
-    
-    # Get last payment date
-    recent_payments = await PaymentRepository.get_recent(current_user.id, days=30, limit=1, token=token)
-    last_payment_date = recent_payments[0].payment_date if recent_payments else None
-    
-    # Generate daily actions
-    return await action_agent.generate_daily_actions(
-        plan=active_plan,
-        debts=debts,
-        current_streak=payment_stats.current_streak_days,
-        last_payment_date=last_payment_date,
-        payments_this_month=payment_stats.payments_this_month
+    # Create background job
+    job = await job_service.create_job(
+        user_id=current_user.id,
+        job_type=JobType.DAILY_ACTIONS,
+        input_data={
+            "token": token
+        }
     )
+    
+    return job

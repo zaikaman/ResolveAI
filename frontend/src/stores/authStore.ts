@@ -59,7 +59,14 @@ export const useAuthStore = create<AuthState>()(
       refreshSession: async () => {
         try {
           console.log('[AuthStore] refreshSession: Starting...');
-          set({ loading: true, error: null });
+          // Use initializing instead of loading for initial checks to avoid showing loading screen on tab switch
+          const isInitialLoad = get().initializing;
+          if (isInitialLoad) {
+            set({ loading: true, error: null });
+          } else {
+            // Silent refresh - don't trigger loading state
+            set({ error: null });
+          }
           
           const { data, error } = await supabase.auth.getSession();
 
@@ -115,8 +122,14 @@ export const useAuthStore = create<AuthState>()(
           console.error('[AuthStore] refreshSession: Error', error);
           set({ user: null, session: null, error: error.message || 'Session refresh failed' });
         } finally {
-          console.log('[AuthStore] refreshSession: Finished, setting loading=false');
-          set({ loading: false, initializing: false });
+          console.log('[AuthStore] refreshSession: Finished');
+          const isInitialLoad = get().initializing;
+          if (isInitialLoad) {
+            set({ loading: false, initializing: false });
+          } else {
+            // Silent refresh - loading state wasn't changed, just mark as initialized
+            set({ initializing: false });
+          }
         }
       }
     }),

@@ -79,6 +79,7 @@ function App() {
   const { refreshSession, setSession, setUser, setLoading } = useAuthStore();
 
   useEffect(() => {
+    // Only run once on initial mount
     // Skip initialization if we're on the callback page (let AuthCallback handle it)
     const isOnCallbackPage = window.location.pathname === '/auth/callback';
 
@@ -99,12 +100,23 @@ function App() {
         return;
       }
 
+      // Ignore TOKEN_REFRESHED and SIGNED_IN events if we already have a user profile
+      // These are just token refreshes, not new sign-ins
+      if ((event === 'TOKEN_REFRESHED' || event === 'SIGNED_IN') && session) {
+        const currentUser = useAuthStore.getState().user;
+        if (currentUser && currentUser.id === session.user.id) {
+          console.log('[App] Token refreshed/re-authenticated - user already loaded, skipping profile fetch');
+          setSession(session); // Just update the session token
+          return;
+        }
+      }
+
       // Update session in store
       setSession(session);
 
       if (event === 'SIGNED_IN' && session) {
-        // User just signed in (not via OAuth callback)
-        console.log('[App] SIGNED_IN event - fetching user profile');
+        // User just signed in for the first time - fetch profile
+        console.log('[App] New SIGNED_IN event - fetching user profile');
         setLoading(true);
         try {
           const response = await api.get<User>('/auth/me');
@@ -120,8 +132,6 @@ function App() {
       } else if (event === 'SIGNED_OUT' || !session) {
         console.log('[App] Signed out or no session');
         setUser(null);
-      } else if (event === 'TOKEN_REFRESHED' && session) {
-        console.log('[App] Token refreshed');
       }
     });
 
@@ -129,7 +139,8 @@ function App() {
       console.log('[App] Unsubscribing from auth changes');
       subscription.unsubscribe();
     };
-  }, [refreshSession, setSession, setUser, setLoading]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Empty deps - only run once on mount
 
   return (
     <BrowserRouter>

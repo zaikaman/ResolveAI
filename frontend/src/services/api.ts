@@ -10,7 +10,7 @@ import { supabase } from './supabaseClient';
 // Create axios instance
 const api: AxiosInstance = axios.create({
   baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8000/api',
-  timeout: 30000,
+  timeout: 120000, // 2 minutes - increased for job creation (actual processing is async)
   headers: {
     'Content-Type': 'application/json',
   },

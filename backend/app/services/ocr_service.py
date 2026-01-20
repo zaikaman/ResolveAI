@@ -8,6 +8,7 @@ from datetime import datetime
 from app.core.openai_client import get_openai_client
 from app.models.upload import ExtractedDebt, OCRResult, UploadStatus
 from app.core.errors import ExternalServiceError
+from app.config import settings
 import json
 
 
@@ -84,7 +85,7 @@ Only extract debts you are reasonably confident about (confidence > 0.6).
             client = get_openai_client()
             
             response = await client.chat.completions.create(
-                model="gpt-4o-mini",  # Using mini for cost efficiency
+                model=settings.OPENAI_MODEL,  # Use configured model
                 messages=[
                     {
                         "role": "user",

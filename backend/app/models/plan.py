@@ -102,6 +102,9 @@ class PlanResponse(BaseModel):
     projections: list[PlanProjection]
     payoff_order: list[DebtPayoffInfo]
     
+    # AI-generated insights
+    ai_explanation: Optional[str] = Field(None, description="AI-generated explanation and motivation")
+    
     # Timestamps
     created_at: datetime
     updated_at: datetime

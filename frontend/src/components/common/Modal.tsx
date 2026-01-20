@@ -11,6 +11,7 @@ interface ModalProps {
     children: React.ReactNode;
     footer?: React.ReactNode;
     size?: "sm" | "md" | "lg" | "xl" | "full";
+    hideCloseButton?: boolean;
 }
 
 export function Modal({
@@ -21,6 +22,7 @@ export function Modal({
     children,
     footer,
     size = "md",
+    hideCloseButton = false,
 }: ModalProps) {
     React.useEffect(() => {
         const handleEscape = (e: KeyboardEvent) => {
@@ -71,13 +73,15 @@ export function Modal({
                             <p className="text-sm text-slate-500">{description}</p>
                         )}
                     </div>
-                    <button
-                        onClick={onClose}
-                        className="rounded-full p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-500 transition-colors"
-                    >
-                        <X className="h-5 w-5" />
-                        <span className="sr-only">Close</span>
-                    </button>
+                    {!hideCloseButton && (
+                        <button
+                            onClick={onClose}
+                            className="rounded-full p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-500 transition-colors"
+                        >
+                            <X className="h-5 w-5" />
+                            <span className="sr-only">Close</span>
+                        </button>
+                    )}
                 </div>
 
                 <div className="p-6 overflow-y-auto custom-scrollbar">

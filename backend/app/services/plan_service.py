@@ -6,7 +6,9 @@ from datetime import date
 from typing import Optional, List
 from app.db.repositories.plan_repo import PlanRepository
 from app.db.repositories.debt_repo import DebtRepository
+from app.db.repositories.user_repo import UserRepository
 from app.services.optimization_service import OptimizationService, DebtInfo
+from app.services.encryption_service import encryption_service
 from app.agents.optimization_agent import optimization_agent
 from app.models.plan import (
     PlanRequest,
@@ -68,6 +70,26 @@ class PlanService:
         # Use custom budget if provided, otherwise use user's available amount
         monthly_budget = request.custom_monthly_budget or available_for_debt
         
+        # Get user's financial context for AI recommendations
+        user_context = {
+            "available_for_debt": available_for_debt,
+            "payment_history": "new_user"  # Could be enhanced with actual history
+        }
+        
+        # Fetch and decrypt user's income/expenses for enhanced AI insights
+        try:
+            user_profile = await UserRepository.get_by_id(user_id, token=token)
+            if user_profile:
+                if user_profile.monthly_income_encrypted:
+                    monthly_income = float(encryption_service.decrypt_server_only(user_profile.monthly_income_encrypted))
+                    user_context["monthly_income"] = monthly_income
+                if user_profile.monthly_expenses_encrypted:
+                    monthly_expenses = float(encryption_service.decrypt_server_only(user_profile.monthly_expenses_encrypted))
+                    user_context["monthly_expenses"] = monthly_expenses
+        except Exception as e:
+            print(f"Warning: Could not fetch user financial context: {e}")
+            # Continue without income/expenses context
+        
         # Use AI-powered optimization agent
         result = await optimization_agent.optimize_repayment_plan(
             user_id=user_id,
@@ -78,10 +100,7 @@ class PlanService:
                 "extra_payment": request.extra_monthly_payment,
                 "start_date": request.start_date
             },
-            user_context={
-                "available_for_debt": available_for_debt,
-                "payment_history": "new_user"  # Could be enhanced with actual history
-            }
+            user_context=user_context
         )
         
         # Calculate minimum-only comparison
@@ -111,6 +130,7 @@ class PlanService:
             monthly_schedule=result.monthly_schedule,
             projections=result.projections,
             payoff_order=result.payoff_order,
+            ai_explanation=getattr(result, 'ai_explanation', None),
             token=token
         )
         
@@ -148,7 +168,8 @@ class PlanService:
         plan_id: str,
         strategy: Optional[RepaymentStrategy] = None,
         extra_payment: Optional[float] = None,
-        available_for_debt: Optional[float] = None
+        available_for_debt: Optional[float] = None,
+        token: Optional[str] = None
     ) -> PlanResponse:
         """
         Recalculate an existing plan with new parameters.
@@ -159,6 +180,7 @@ class PlanService:
             strategy: New strategy (optional)
             extra_payment: New extra payment (optional)
             available_for_debt: New available amount (optional)
+            token: Optional JWT token for authenticated request
         
         Returns:
             New recalculated plan
@@ -177,13 +199,14 @@ class PlanService:
         # Use new available amount or calculate from existing plan
         budget = available_for_debt or (existing.monthly_payment - existing.extra_payment)
         
-        return await PlanService.generate_plan(user_id, request, budget)
+        return await PlanService.generate_plan(user_id, request, budget, token=token)
     
     @staticmethod
     async def simulate_scenario(
         user_id: str,
         request: PlanSimulationRequest,
-        available_for_debt: float
+        available_for_debt: float,
+        token: Optional[str] = None
     ) -> PlanSimulationResponse:
         """
         Simulate a what-if scenario without saving.
@@ -192,6 +215,7 @@ class PlanService:
             user_id: User UUID
             request: Simulation request
             available_for_debt: User's available monthly amount
+            token: Optional JWT token for authenticated request
         
         Returns:
             Simulation comparison results
